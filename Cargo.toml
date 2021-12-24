@@ -1,0 +1,18 @@
+[package]
+name = "Lugli-language-compiler"
+version = "0.1.0"
+description = "My 'lugli' language compiler created by me"
+authors = ["Vinicios Lugli <vinicioslugli@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+regex = "1.5.4"
+lazy_static = "1.4.0"
+dotenv = "0.15.0"
+chrono = "0.4.19"
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = true
+# panic = "abort"
