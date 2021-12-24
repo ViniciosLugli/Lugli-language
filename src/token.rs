@@ -1,7 +1,7 @@
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenKind {
 	VariableStatement,
-	Indentifier,
+	Identifier,
 	Assign,
 
 	String,
@@ -10,14 +10,14 @@ pub enum TokenKind {
 
 #[derive(Debug, Clone)]
 pub struct Token {
-	pub token_type: TokenKind,
+	pub kind: TokenKind,
 	pub literal: String
 }
 
 impl Token {
-	pub fn new(token_type: TokenKind, literal: String) -> Self {
+	pub fn new(kind: TokenKind, literal: String) -> Self {
 		Self {
-			token_type,
+			kind,
 			literal
 		}
 	}

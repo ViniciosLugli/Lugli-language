@@ -10,3 +10,5 @@ rustfmt.toml
 
 **/*.rs.bk
 *.pdb
+
+.env

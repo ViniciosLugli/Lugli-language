@@ -1,7 +1,7 @@
-#[path = "lexer.rs"]
+mod ast;
 mod lexer;
-
-pub use lexer::Lexer;
+mod parser;
+mod token;
 
 use std::{env, fs};
 
@@ -12,18 +12,19 @@ fn main() {
 	let file = if let Some(file) = env::args().nth(1) {
 		file
 	} else {
-		panic!("No file specified");
+		panic!("No file specified.");
 	};
 
 	let contents = if let Ok(contents) = fs::read_to_string(&file) {
 		contents
 	} else {
-		panic!("Could not read file {}", file);
+		panic!("Could not read file {}.", file);
 	};
 
-	let mut lexer = Lexer::new(contents);
+	let lexer = lexer::Lexer::new(contents);
+	let mut parser = parser::Parser::new(lexer);
 
-	while let Some(t) = lexer.next() {
-		println!("{:?}", t);
-	}
+	let program = parser.parse();
+
+	println!("{:?}", program);
 }

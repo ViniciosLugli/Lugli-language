@@ -1,7 +1,4 @@
-#[path = "token.rs"]
-mod token;
-
-pub use token::{Token, TokenKind};
+use crate::token::{Token, TokenKind};
 
 #[derive(Clone)]
 pub struct Lexer {
@@ -43,45 +40,39 @@ impl Lexer {
 			self.read();
 		}
 	}
-}
 
-impl Iterator for Lexer {
-	type Item = Token;
-
-	fn next(&mut self) -> Option<Token> {
-		if self.next >= self.source.len() {
-			return None;
-		}
-
+	fn match_token(&mut self) -> Token {
 		self.skip_whitespace();
 
-		let t: Token = match self.char_ {
-			'=' => Token::new(TokenKind::Assign, "=".to_owned()),
-
-			_ if self.char_.is_alphabetic() => {
-				let mut buffer: String = String::new();
-
-				buffer.push(self.char_);
+		match self.char_ {
+			'=' => {
 				self.read();
 
-				while self.char_.is_alphabetic() {
+				Token::new(TokenKind::Assign, "=".to_owned())
+			}
+			_ if self.char_.is_alphabetic() => {
+				let mut buffer = String::new();
+				buffer.push(self.char_);
+
+				self.read();
+
+				while self.current < self.source.len() && self.char_.is_alphabetic() {
 					buffer.push(self.char_);
 					self.read();
 				}
 
-				// TODO: Add support for config/custom keywords
+				// TODO: Add support for keywords
 				let kind = match buffer.as_str() {
 					"let" => TokenKind::VariableStatement,
-					_ => TokenKind::Indentifier
+					_ => TokenKind::Identifier
 				};
 
 				Token::new(kind, buffer)
 			}
-
 			_ if self.char_.is_numeric() => {
-				let mut buffer: String = String::new();
-
+				let mut buffer = String::new();
 				buffer.push(self.char_);
+
 				self.read();
 
 				loop {
@@ -103,12 +94,41 @@ impl Iterator for Lexer {
 
 				Token::new(TokenKind::Number, buffer)
 			}
-
 			_ => unimplemented!()
-		};
+		}
+	}
 
-		self.read();
+	pub fn peek(&mut self) -> Option<Token> {
+		if self.next >= self.source.len() {
+			return None;
+		}
 
-		Some(t)
+		let old_current = self.current;
+		let old_next = self.next;
+		let old_char = self.char_;
+
+		self.char_ = self.source[self.next];
+
+		let token = self.match_token();
+
+		self.current = old_current;
+		self.next = old_next;
+		self.char_ = old_char;
+
+		Some(token)
+	}
+}
+
+impl Iterator for Lexer {
+	type Item = Token;
+
+	fn next(&mut self) -> Option<Token> {
+		if self.next >= self.source.len() {
+			return None;
+		}
+
+		let token = self.match_token();
+
+		Some(token)
 	}
 }
