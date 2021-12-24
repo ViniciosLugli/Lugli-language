@@ -47,9 +47,40 @@ impl Lexer {
 		match self.char_ {
 			'=' => {
 				self.read();
-
 				Token::new(TokenKind::Assign, "=".to_owned())
 			}
+
+			'+' => {
+				self.read();
+				Token::new(TokenKind::Plus, "+".to_owned())
+			}
+
+			'*' => {
+				self.read();
+				Token::new(TokenKind::Multiply, "*".to_owned())
+			}
+
+			'-' => {
+				self.read();
+				Token::new(TokenKind::Minus, "-".to_owned())
+			}
+
+			'/' => {
+				self.read();
+
+				Token::new(TokenKind::Divide, "/".to_owned())
+			}
+
+			'%' => {
+				self.read();
+				Token::new(TokenKind::Modulo, "%".to_owned())
+			}
+
+			'^' => {
+				self.read();
+				Token::new(TokenKind::Power, "^".to_owned())
+			}
+
 			_ if self.char_.is_alphabetic() => {
 				let mut buffer = String::new();
 				buffer.push(self.char_);

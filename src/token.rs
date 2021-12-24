@@ -5,7 +5,14 @@ pub enum TokenKind {
 	Assign,
 
 	String,
-	Number
+	Number,
+
+	Plus,
+	Minus,
+	Multiply,
+	Divide,
+	Modulo,
+	Power
 }
 
 #[derive(Debug, Clone)]
