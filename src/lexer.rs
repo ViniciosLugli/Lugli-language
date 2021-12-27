@@ -81,13 +81,50 @@ impl Lexer {
 				Token::new(TokenKind::Power, "^".to_owned())
 			}
 
+			'\'' | '"' => {
+				let mut buffer = String::new();
+				let b_char = self.char_;
+
+				self.read();
+
+				while self.char_ != b_char {
+					if self.current >= self.source.len() {
+						panic!("Unterminated string literal.");
+					}
+
+					if self.char_ == '\\' {
+						self.read();
+
+						match self.char_ {
+							'n' => buffer.push('\n'),
+							'r' => buffer.push('\r'),
+							't' => buffer.push('\t'),
+							'\\' => buffer.push('\\'),
+							'\'' | '"' => buffer.push(self.char_),
+							_ => buffer.push(self.char_)
+						}
+					} else {
+						buffer.push(self.char_);
+						self.read();
+					}
+				}
+
+				self.read();
+
+				Token::new(TokenKind::String, buffer)
+			}
+
 			_ if self.char_.is_alphabetic() => {
 				let mut buffer = String::new();
 				buffer.push(self.char_);
 
 				self.read();
 
-				while self.current < self.source.len() && self.char_.is_alphabetic() {
+				while self.char_.is_alphabetic() {
+					if self.current >= self.source.len() {
+						panic!("Unterminated string literal.");
+					}
+
 					buffer.push(self.char_);
 					self.read();
 				}

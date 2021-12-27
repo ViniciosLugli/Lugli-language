@@ -6,7 +6,7 @@ pub enum Statement {
 #[derive(Debug)]
 pub enum Expression {
 	Number(f64),
-
+	String(String),
 	Binary(Box<Expression>, BinaryOperator, Box<Expression>)
 }
 

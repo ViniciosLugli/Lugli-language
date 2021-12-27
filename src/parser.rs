@@ -61,6 +61,12 @@ impl Parser {
 				kind: TokenKind::Number,
 				literal
 			}) => Expression::Number(literal.parse().unwrap()),
+
+			Some(Token {
+				kind: TokenKind::String,
+				literal
+			}) => Expression::String(literal.parse().unwrap()),
+
 			_ => unimplemented!()
 		};
 
