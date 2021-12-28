@@ -415,7 +415,6 @@ impl<'i> Interpreter<'i> {
 
 						match instance.clone() {
 							// TODO: Check if the field exists on the definition before
-							// actually doing the assignment.
 							Value::StructInstance { environment, .. } => environment.borrow_mut().set(field, value.clone()),
 							Value::Struct { methods, .. } => {
 								if !matches!(value.clone(), Value::Function { .. }) {

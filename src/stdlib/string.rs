@@ -11,7 +11,7 @@ impl StringObject {
 			"contains?" => string_contains,
 			"startsWith?" => string_starts_with,
 			"endsWith?" => string_ends_with,
-			"finish" => string_finish,
+			"finish!" => string_finish,
 			"append!" => string_append,
 			"tap" => string_tap,
 			"upper!" => string_to_upper,
@@ -64,7 +64,7 @@ fn string_ends_with(_: &mut Interpreter, context: Value, arguments: Vec<Value>) 
 }
 
 fn string_finish(_: &mut Interpreter, context: Value, arguments: Vec<Value>) -> Result<Value, InterpreterResult> {
-	super::arity("String.finish", 1, &arguments);
+	super::arity("String.finish!", 1, &arguments);
 
 	let mut string = context.to_string();
 	let append = arguments[0].clone().to_string();
@@ -77,7 +77,7 @@ fn string_finish(_: &mut Interpreter, context: Value, arguments: Vec<Value>) -> 
 }
 
 fn string_append(_: &mut Interpreter, context: Value, arguments: Vec<Value>) -> Result<Value, InterpreterResult> {
-	super::arity("String.append", 1, &arguments);
+	super::arity("String.append!", 1, &arguments);
 
 	let mut string = context.to_string();
 	let append = arguments[0].clone().to_string();
@@ -93,7 +93,6 @@ fn string_tap(interpreter: &mut Interpreter, context: Value, arguments: Vec<Valu
 	let string = context.clone();
 
 	// TODO: Add some better error handling here. Maybe check that
-	// the argument being passed is actually a function.
 	let callback = match arguments.get(0) {
 		Some(f) => f.clone(),
 		_ => unreachable!(),
