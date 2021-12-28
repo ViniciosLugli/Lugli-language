@@ -1,0 +1,26 @@
+let list = ["List", "Of", "Names"]
+
+println!(list)
+
+println!(list[0])
+
+list[0] = "foo"
+
+let name = list[0]
+
+println!(name)
+
+list[] = "bar"
+
+println!(list)
+
+let nested = [
+    ["Person", "person@test.com"],
+    ["NotPerson", "NotPerson@test.com"]
+]
+
+println!(nested)
+
+nested[0][0] = "AlsoPerson"
+
+println!(nested)

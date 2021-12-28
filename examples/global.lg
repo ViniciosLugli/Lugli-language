@@ -1,0 +1,11 @@
+print!("testing not breaking line")
+println!(" - - -")
+
+struct Bar {
+    var
+}
+let var = 1
+
+println!(type?("foo"))
+println!(type?(123))
+println!(type?(Bar))

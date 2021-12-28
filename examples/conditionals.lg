@@ -1,0 +1,17 @@
+if true {
+    println!("True")
+} else {
+    println!("False")
+}
+
+if 1 < 2 {
+    println!("less than if")
+}
+
+if true && true {
+    println!("And if")
+}
+
+if true || false {
+    println!("Or if")
+}

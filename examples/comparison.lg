@@ -1,0 +1,11 @@
+if 1 == 1 {
+    println!("Equal if")
+}
+
+if 2 != 2 {
+    println!("Not equal if")
+}
+
+if !false {
+    println!("Not false if")
+}

@@ -1,0 +1,9 @@
+let names = ["Lugli", "Gabs", "Edu Barreto", "Lucas gay", "Teugo", "Julho", "Zap Zap", "Pucca", "Campos"]
+
+for name in names {
+    println!(name)
+}
+
+for (i, name) in names {
+    println!(i + ". " + name)
+}
