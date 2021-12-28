@@ -1,0 +1,5 @@
+fn say_hello_language(lang) {
+    println("Hello, " + lang + " Language!")
+}
+
+say_hello_language("Lugli")
