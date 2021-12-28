@@ -12,9 +12,9 @@ use crate::{ast::*, environment::*};
 pub fn interpret(ast: Program) -> Result<(), InterpreterResult> {
 	let mut interpreter = Interpreter::new(ast.iter());
 
-	interpreter.define_global_function("println", crate::stdlib::println);
-	interpreter.define_global_function("print", crate::stdlib::print);
-	interpreter.define_global_function("type", crate::stdlib::r#type);
+	interpreter.define_global_function("println!", crate::stdlib::println);
+	interpreter.define_global_function("print!", crate::stdlib::print);
+	interpreter.define_global_function("type?", crate::stdlib::r#type);
 
 	interpreter.run()
 }

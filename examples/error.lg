@@ -19,4 +19,4 @@ for c in string {
 
 let person = Person { name: "Ryan" }
 
-println(person.email)
+println!(person.email)

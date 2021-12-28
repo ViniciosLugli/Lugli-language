@@ -1,17 +1,17 @@
 if true {
-    println("True")
+    println!("True")
 } else {
-    println("False")
+    println!("False")
 }
 
 if 1 < 2 {
-    println("less than if")
+    println!("less than if")
 }
 
 if true && true {
-    println("And if")
+    println!("And if")
 }
 
 if true || false {
-    println("Or if")
+    println!("Or if")
 }

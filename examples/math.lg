@@ -5,9 +5,9 @@ let division = 3 / 2
 let precedence = 2 + 3 * 2 / 2
 let pow = 2 ** 8
 
-println(sum)
-println(product)
-println(subtraction)
-println(division)
-println(precedence)
-println(pow)
+println!(sum)
+println!(product)
+println!(subtraction)
+println!(division)
+println!(precedence)
+println!(pow)

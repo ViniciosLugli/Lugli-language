@@ -1,14 +1,14 @@
 let name = "Ryan"
 
-println(name.contains?("Ry"))
-println(name.startsWith?("Ry"))
-println(name.endsWith?("an"))
-println(name.finish!(" Chandler"))
-println(name.append!(" Chandler"))
+println!(name.contains?("Ry"))
+println!(name.startsWith?("Ry"))
+println!(name.endsWith?("an"))
+println!(name.finish!(" Chandler"))
+println!(name.append!(" Chandler"))
 
 name.tap(fn (raw) {
-    println("Tapped value is: " + raw)
+    println!("Tapped value is: " + raw)
 })
 
-println("this should be in uppercase".upper!())
-println("this should be in lowercase".lower!())
+println!("this should be in uppercase".upper!())
+println!("this should be in lowercase".lower!())

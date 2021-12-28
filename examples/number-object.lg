@@ -2,31 +2,31 @@ let float = 1.2
 let int = 1
 
 if float.integer?() {
-	println("Float is an integer")
+	println!("Float is an integer")
 } else {
-	println("Float is not an integer")
+	println!("Float is not an integer")
 }
 
 if int.integer?() {
-	println("Int is an integer")
+	println!("Int is an integer")
 } else {
-	println("Int is not an integer")
+	println!("Int is not an integer")
 }
 
 if int.float?() {
-	println("Int is a float")
+	println!("Int is a float")
 } else {
-	println("Int is not a float")
+	println!("Int is not a float")
 }
 
 if float.float?() {
-	println("Float is a float")
+	println!("Float is a float")
 } else {
-	println("Float is not a float")
+	println!("Float is not a float")
 }
 
 let longFloat = 3.14
-println("Rounded " + longFloat + " = " + longFloat.round!())
+println!("Rounded " + longFloat + " = " + longFloat.round!())
 
 longFloat = 3.988
-println("Rounded " + longFloat + " = " + longFloat.round!(2))
+println!("Rounded " + longFloat + " = " + longFloat.round!(2))

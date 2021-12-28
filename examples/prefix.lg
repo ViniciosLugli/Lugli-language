@@ -2,12 +2,12 @@ let negate = -21
 let bang = ! false
 let negate_and_multiply = -1 * 3
 
-println("negate: " + negate)
+println!("negate: " + negate)
 
 if bang {
-	println("bang is true")
+	println!("bang is true")
 } else {
-	println("bang is false")
+	println!("bang is false")
 }
 
-println("negate_and_multiply: " + negate_and_multiply)
+println!("negate_and_multiply: " + negate_and_multiply)
