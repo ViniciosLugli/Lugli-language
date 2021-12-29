@@ -1,5 +1,5 @@
 # Lugli language compiler
-My 'lugli' language compiler for learning purposes, written in rust. This language is to be a subset for other purposes, for example, a simple language to use on math problems and logical learning, but also it is a good example of how to write a compiler.
+My 'Lugli' language compiler for learning purposes, written in rust. This language is to be a subset for other purposes, for example, a simple language to use on math problems and logical learning, but also it is a good example of how to write a compiler.
 
 # Compiler features
 * [x] tokenizer / lexer
