@@ -31,6 +31,9 @@ pub enum InterpreterResult {
 	#[error("")]
 	Return(Value),
 
+	#[error("")]
+	Break,
+
 	#[error("Undefined variable: {0}.")]
 	UndefinedVariable(String),
 
@@ -136,6 +139,16 @@ impl<'i> Interpreter<'i> {
 					self.env_mut().drop(index.unwrap());
 				}
 			}
+			Statement::While { condition, then } => {
+				'outer: while self.run_expression(condition.clone())?.to_bool() {
+					for statement in then.clone() {
+						match self.run_statement(statement) {
+							Err(InterpreterResult::Break) => break 'outer,
+							_ => (),
+						}
+					}
+				}
+			}
 			Statement::If { condition, then, otherwise } => {
 				let condition = self.run_expression(condition)?;
 
@@ -155,12 +168,8 @@ impl<'i> Interpreter<'i> {
 			Statement::Return { value } => {
 				return Err(InterpreterResult::Return(self.run_expression(value)?));
 			}
-			Statement::While { condition, then } => {
-				while self.run_expression(condition.clone())?.to_bool() {
-					for statement in then.clone() {
-						self.run_statement(statement)?;
-					}
-				}
+			Statement::Break => {
+				return Err(InterpreterResult::Break);
 			}
 			_ => todo!("{:?}", statement),
 		})

@@ -44,6 +44,8 @@ pub enum Token {
 	While,
 	#[token("return")]
 	Return,
+	#[token("break")]
+	Break,
 	#[token("for")]
 	For,
 	#[token("in")]

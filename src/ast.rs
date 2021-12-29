@@ -9,6 +9,7 @@ pub type Identifier = String;
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
 	Return { value: Expression },
+	Break,
 	FunctionDeclaration { name: Identifier, params: Vec<Parameter>, body: Block },
 	StructDeclaration { name: Identifier, fields: Vec<Parameter> },
 	CreateDeclaration { name: Identifier, initial: Option<Expression> },
