@@ -121,7 +121,7 @@ impl<'i> Interpreter<'i> {
 
 				let set_index: bool = index.is_some();
 
-				for (i, item) in items.borrow().iter().enumerate() {
+				'outer: for (i, item) in items.borrow().iter().enumerate() {
 					self.env_mut().set(value.clone(), item.clone());
 
 					if set_index {
@@ -129,7 +129,10 @@ impl<'i> Interpreter<'i> {
 					}
 
 					for statement in then.clone() {
-						self.run_statement(statement)?;
+						match self.run_statement(statement) {
+							Err(InterpreterResult::Break) => break 'outer,
+							_ => (),
+						}
 					}
 				}
 

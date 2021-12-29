@@ -7,3 +7,10 @@ for name in names {
 for (i, name) in names {
     println!(i + ". " + name)
 }
+
+println!("-- breaking in first name --")
+
+for name in names {
+    println!(name)
+    break
+}
