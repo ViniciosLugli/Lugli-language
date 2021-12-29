@@ -135,7 +135,6 @@ impl<'i> Interpreter<'i> {
 						match self.run_statement(statement) {
 							Err(InterpreterResult::Break) => break 'outer_for,
 							Err(InterpreterResult::Continue) => break,
-							Err(err) => return Err(err),
 							_ => (),
 						}
 					}
@@ -152,8 +151,6 @@ impl<'i> Interpreter<'i> {
 					for statement in then.clone() {
 						match self.run_statement(statement) {
 							Err(InterpreterResult::Break) => break 'outer_while,
-							Err(InterpreterResult::Continue) => break,
-							Err(err) => return Err(err),
 							_ => (),
 						}
 					}
@@ -244,7 +241,6 @@ impl<'i> Interpreter<'i> {
 							return_value = Some(value);
 							break;
 						}
-						Err(err) => return Err(err),
 						_ => (),
 					};
 				}
