@@ -2,15 +2,15 @@ struct Person {
     name
 }
 
-const Ryan = Person { name: "Ryan" }
+const Lugli = Person { name: "Lugli" }
 
 println!(Ryan.name)
 
-Ryan.name = "testing"
+Lugli.name = "testing"
 
-println!(Ryan.name)
+println!(Lugli.name)
 
-const name = "Ryan"
+const name = "Lugli"
 
 println!(name)
 

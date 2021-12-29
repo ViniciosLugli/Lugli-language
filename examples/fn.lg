@@ -4,4 +4,4 @@ fn say_hello(name) {
 
 println!(say_hello)
 
-say_hello("Ryan")
+say_hello("Lugli")

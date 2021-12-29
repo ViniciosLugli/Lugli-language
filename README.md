@@ -2,9 +2,13 @@
 My 'Lugli' language compiler for learning purposes, written in rust. This language is to be a subset for other purposes, for example, a simple language to use on math problems and logical learning, but also it is a good example of how to write a compiler.
 
 # Compiler usage / commands
+### Run
 ```bash
-Lugli run <file path>
+[Executable] run <file path>
 ```
+Example: `Lugli.exe run foo.lg`
+
+---
 
 # Compiler features
 * [x] tokenizer / lexer

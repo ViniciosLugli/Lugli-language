@@ -4,7 +4,7 @@ create name = "Testing"
 println!(name) -- You can place a comment after a statement like this.
 
 create names = [
-    "Ryan", --This is a comment
+    "Lugli", --This is a comment
     "Testing"
 ]
 

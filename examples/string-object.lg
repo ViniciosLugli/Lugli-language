@@ -1,10 +1,10 @@
-create name = "Ryan"
+create name = "Gabs"
 
-println!(name.contains?("Ry"))
-println!(name.startsWith?("Ry"))
-println!(name.endsWith?("an"))
-println!(name.finish!(" Chandler"))
-println!(name.append!(" Chandler"))
+println!(name.contains?("Ga"))
+println!(name.startsWith?("Ga"))
+println!(name.endsWith?("bs"))
+println!(name.finish!(" gay"))
+println!(name.append!(" gay"))
 
 name.tap(fn (raw) {
     println!("Tapped value is: " + raw)
