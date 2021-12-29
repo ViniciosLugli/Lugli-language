@@ -1,6 +1,11 @@
 # Lugli language compiler
 My 'Lugli' language compiler for learning purposes, written in rust. This language is to be a subset for other purposes, for example, a simple language to use on math problems and logical learning, but also it is a good example of how to write a compiler.
 
+# Compiler usage / commands
+```bash
+Lugli run <file path>
+```
+
 # Compiler features
 * [x] tokenizer / lexer
 * [x] parser
@@ -21,7 +26,7 @@ My 'Lugli' language compiler for learning purposes, written in rust. This langua
 # Current librarys
 - Not yet implemented:
 
-
+---
 
 Learning support from:
 - https://github.com/ryangjchandler/lagoon
