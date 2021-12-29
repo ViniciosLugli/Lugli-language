@@ -30,4 +30,4 @@ Learning support from:
 ---
 
 ## License
-This project is under license [MIT](LICENSE.md), for learning purposes only.
+This project is under license [GPL v3](LICENSE.md), for learning purposes only.
