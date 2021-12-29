@@ -30,30 +30,43 @@ fn to_float(lex: &mut Lexer<Token>) -> Option<f64> {
 pub enum Token {
 	#[token("fn")]
 	Fn,
+
 	#[token("create")]
 	Create,
+
 	#[token("const")]
 	Const,
+
 	#[token("if")]
 	If,
-	#[token("else if")]
+
+	#[token("elif")]
 	ElseIf,
+
 	#[token("else")]
 	Else,
+
 	#[token("struct")]
 	Struct,
+
 	#[token("while")]
 	While,
+
 	#[token("return")]
 	Return,
+
 	#[token("break")]
 	Break,
+
 	#[token("continue")]
 	Continue,
+
 	#[token("for")]
 	For,
+
 	#[token("in")]
 	In,
+
 	#[token("not in")]
 	NotIn,
 
@@ -156,7 +169,7 @@ mod tests {
 
 	#[test]
 	fn it_can_recognise_reserved_keywords() {
-		let mut lexer = Token::lexer("fn create true false if else while struct");
+		let mut lexer = Token::lexer("fn create true false if else while for struct else if");
 
 		assert_eq!(lexer.next(), Some(Token::Fn));
 		assert_eq!(lexer.next(), Some(Token::Create));
@@ -165,7 +178,9 @@ mod tests {
 		assert_eq!(lexer.next(), Some(Token::If));
 		assert_eq!(lexer.next(), Some(Token::Else));
 		assert_eq!(lexer.next(), Some(Token::While));
+		assert_eq!(lexer.next(), Some(Token::For));
 		assert_eq!(lexer.next(), Some(Token::Struct));
+		assert_eq!(lexer.next(), Some(Token::ElseIf));
 	}
 
 	#[test]
