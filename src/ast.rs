@@ -7,6 +7,12 @@ pub type Block = Vec<Statement>;
 pub type Identifier = String;
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct ConditionBlock {
+	pub expression: Expression,
+	pub then: Block,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
 	Return { value: Expression },
 	Break,
@@ -15,7 +21,7 @@ pub enum Statement {
 	StructDeclaration { name: Identifier, fields: Vec<Parameter> },
 	CreateDeclaration { name: Identifier, initial: Option<Expression> },
 	ConstDeclaration { name: Identifier, initial: Expression },
-	If { condition: Expression, then: Block, otherwise: Option<Block> },
+	If { condition: ConditionBlock, others_conditions: Option<Vec<ConditionBlock>>, otherwise: Option<Block> },
 	For { iterable: Expression, value: Identifier, index: Option<Identifier>, then: Block },
 	While { condition: Expression, then: Block },
 	Expression { expression: Expression },

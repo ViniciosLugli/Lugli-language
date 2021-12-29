@@ -36,6 +36,8 @@ pub enum Token {
 	Const,
 	#[token("if")]
 	If,
+	#[token("else if")]
+	ElseIf,
 	#[token("else")]
 	Else,
 	#[token("struct")]

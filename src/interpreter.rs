@@ -159,14 +159,33 @@ impl<'i> Interpreter<'i> {
 					}
 				}
 			}
-			Statement::If { condition, then, otherwise } => {
-				let condition = self.run_expression(condition)?;
+			Statement::If { condition, others_conditions, otherwise } => {
+				let expression = self.run_expression(condition.expression)?;
+				let mut satisfied = false;
 
-				if condition.to_bool() {
-					for statement in then {
+				if expression.to_bool() {
+					satisfied = true;
+
+					for statement in condition.then {
 						self.run_statement(statement)?;
 					}
-				} else if otherwise.is_some() {
+				} else if let Some(conditions_blocks) = others_conditions {
+					for condition_block in conditions_blocks {
+						let expression_result = self.run_expression(condition_block.expression)?;
+
+						if expression_result.to_bool() {
+							satisfied = true;
+
+							for statement in condition_block.then {
+								self.run_statement(statement)?;
+							}
+
+							break;
+						}
+					}
+				}
+
+				if otherwise.is_some() && !satisfied {
 					for statement in otherwise.unwrap() {
 						self.run_statement(statement)?;
 					}

@@ -3,7 +3,7 @@ use hashbrown::HashMap;
 use std::slice::Iter;
 use thiserror::Error;
 
-use crate::{ast::*, token::Token};
+use crate::{ast::ConditionBlock, ast::*, token::Token};
 
 pub fn parse(tokens: Vec<Token>) -> Result<Program, ParseError> {
 	let mut parser = Parser::new(tokens.iter());
@@ -72,25 +72,9 @@ impl<'p> Parser<'p> {
 			Token::If => self.parse_if(),
 			Token::For => self.parse_for(),
 			Token::While => self.parse_while(),
-			Token::Return => {
-				self.expect_token_and_read(Token::Return)?;
-
-				if let Ok(expression) = self.parse_expression(Precedence::Lowest) {
-					Ok(Statement::Return { value: expression })
-				} else {
-					Ok(Statement::Return { value: Expression::Null })
-				}
-			}
-			Token::Break => {
-				self.expect_token_and_read(Token::Break)?;
-
-				Ok(Statement::Break)
-			}
-			Token::Continue => {
-				self.expect_token_and_read(Token::Continue)?;
-
-				Ok(Statement::Continue)
-			}
+			Token::Return => self.parse_return(),
+			Token::Break => self.parse_break(),
+			Token::Continue => self.parse_continue(),
 			_ => Ok(Statement::Expression { expression: self.parse_expression(Precedence::Lowest)? }),
 		}
 	}
@@ -115,23 +99,6 @@ impl<'p> Parser<'p> {
 		let then = self.parse_block()?;
 
 		Ok(Statement::For { index, value, iterable, then })
-	}
-
-	fn parse_while(&mut self) -> Result<Statement, ParseError> {
-		self.expect_token_and_read(Token::While)?;
-
-		let condition = if self.current_is(Token::LeftParen) {
-			self.expect_token_and_read(Token::LeftParen)?;
-			let condition = self.parse_expression(Precedence::Statement)?;
-			self.expect_token_and_read(Token::RightParen)?;
-			condition
-		} else {
-			self.parse_expression(Precedence::Statement)?
-		};
-
-		let then = self.parse_block()?;
-
-		Ok(Statement::While { condition, then })
 	}
 
 	fn parse_expression(&mut self, precedence: Precedence) -> Result<Expression, ParseError> {
@@ -310,9 +277,40 @@ impl<'p> Parser<'p> {
 
 	fn parse_if(&mut self) -> Result<Statement, ParseError> {
 		self.expect_token_and_read(Token::If)?;
+		let condition_if;
+		if self.current_is(Token::LeftParen) {
+			self.expect_token_and_read(Token::LeftParen)?;
+			condition_if = self.parse_expression(Precedence::Lowest)?;
+			self.expect_token_and_read(Token::RightParen)?;
+		} else {
+			condition_if = self.parse_expression(Precedence::Statement)?;
+		}
 
-		let condition = self.parse_expression(Precedence::Statement)?;
-		let then = self.parse_block()?;
+		let then_if = self.parse_block()?;
+
+		let others_conditions = if self.current_is(Token::ElseIf) {
+			let mut others_conditions: Vec<ConditionBlock> = Vec::new();
+
+			while self.current_is(Token::ElseIf) {
+				self.expect_token_and_read(Token::ElseIf)?;
+
+				let condition_else_if;
+
+				if self.current_is(Token::LeftParen) {
+					self.expect_token_and_read(Token::LeftParen)?;
+					condition_else_if = self.parse_expression(Precedence::Lowest)?;
+					self.expect_token_and_read(Token::RightParen)?;
+				} else {
+					condition_else_if = self.parse_expression(Precedence::Statement)?;
+				}
+				others_conditions.push(ConditionBlock { expression: condition_else_if, then: self.parse_block()? });
+			}
+
+			Some(others_conditions)
+		} else {
+			None
+		};
+
 		let otherwise = if self.current_is(Token::Else) {
 			self.expect_token_and_read(Token::Else)?;
 			Some(self.parse_block()?)
@@ -320,7 +318,46 @@ impl<'p> Parser<'p> {
 			None
 		};
 
-		Ok(Statement::If { condition, then, otherwise })
+		Ok(Statement::If { condition: ConditionBlock { expression: condition_if, then: then_if }, others_conditions, otherwise })
+	}
+
+	fn parse_while(&mut self) -> Result<Statement, ParseError> {
+		self.expect_token_and_read(Token::While)?;
+
+		let condition = if self.current_is(Token::LeftParen) {
+			self.expect_token_and_read(Token::LeftParen)?;
+			let condition = self.parse_expression(Precedence::Statement)?;
+			self.expect_token_and_read(Token::RightParen)?;
+			condition
+		} else {
+			self.parse_expression(Precedence::Statement)?
+		};
+
+		let then = self.parse_block()?;
+
+		Ok(Statement::While { condition, then })
+	}
+
+	fn parse_return(&mut self) -> Result<Statement, ParseError> {
+		self.expect_token_and_read(Token::Return)?;
+
+		if let Ok(expression) = self.parse_expression(Precedence::Lowest) {
+			Ok(Statement::Return { value: expression })
+		} else {
+			Ok(Statement::Return { value: Expression::Null })
+		}
+	}
+
+	fn parse_break(&mut self) -> Result<Statement, ParseError> {
+		self.expect_token_and_read(Token::Break)?;
+
+		Ok(Statement::Break)
+	}
+
+	fn parse_continue(&mut self) -> Result<Statement, ParseError> {
+		self.expect_token_and_read(Token::Continue)?;
+
+		Ok(Statement::Continue)
 	}
 
 	fn parse_create(&mut self) -> Result<Statement, ParseError> {
@@ -414,10 +451,10 @@ impl<'p> Parser<'p> {
 	}
 
 	fn expect_token(&mut self, token: Token) -> Result<Token, ParseError> {
-		if self.current_is(token) {
+		if self.current_is(token.clone()) {
 			Ok(self.current.clone())
 		} else {
-			Err(ParseError::UnexpectedToken(self.current.clone()))
+			Err(ParseError::UnexpectedTokenExpected(self.current.clone(), token))
 		}
 	}
 
@@ -455,6 +492,8 @@ impl<'p> Parser<'p> {
 pub enum ParseError {
 	#[error("Unexpected token `{0:?}`.")]
 	UnexpectedToken(Token),
+	#[error("Unexpected token `{0:?}`, expected `{1:?}`")]
+	UnexpectedTokenExpected(Token, Token),
 	#[error("Entered unreachable code.")]
 	Unreachable,
 }
