@@ -30,9 +30,3 @@ println!("Rounded " + longFloat + " = " + longFloat.round!())
 
 longFloat = 3.988
 println!("Rounded " + longFloat + " = " + longFloat.round!(2))
-
-if int.even?() {
-	println!("Int is even")
-} else {
-	println!("Int is odd")
-}
