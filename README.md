@@ -14,7 +14,7 @@ My 'lugli' language compiler for learning purposes, written in rust. This langua
 * [x] Basic types ➡ String, Number, Boolean, Array, Struct
 * [x] Basic operators ➡ +, -, *, /, ==, !=, >, <, >=, <=, &&, ||, !
 * [x] Basic functions ➡ console print, import files, get object type
-* [x] Basic if statements ➡ if, else, true, false, brackets
+* [x] Basic if statements ➡ if, elif, else, true, false, brackets
 * [x] Basic loops ➡ for, for in, while, break
 ---
 
