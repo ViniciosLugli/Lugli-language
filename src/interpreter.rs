@@ -155,6 +155,13 @@ impl<'i> Interpreter<'i> {
 			Statement::Return { value } => {
 				return Err(InterpreterResult::Return(self.run_expression(value)?));
 			}
+			Statement::While { condition, then } => {
+				while self.run_expression(condition.clone())?.to_bool() {
+					for statement in then.clone() {
+						self.run_statement(statement)?;
+					}
+				}
+			}
 			_ => todo!("{:?}", statement),
 		})
 	}

@@ -71,6 +71,7 @@ impl<'p> Parser<'p> {
 			Token::Const => self.parse_const(),
 			Token::If => self.parse_if(),
 			Token::For => self.parse_for(),
+			Token::While => self.parse_while(),
 			Token::Return => {
 				self.expect_token_and_read(Token::Return)?;
 
@@ -104,6 +105,23 @@ impl<'p> Parser<'p> {
 		let then = self.parse_block()?;
 
 		Ok(Statement::For { index, value, iterable, then })
+	}
+
+	fn parse_while(&mut self) -> Result<Statement, ParseError> {
+		self.expect_token_and_read(Token::While)?;
+
+		let condition = if self.current_is(Token::LeftParen) {
+			self.expect_token_and_read(Token::LeftParen)?;
+			let condition = self.parse_expression(Precedence::Statement)?;
+			self.expect_token_and_read(Token::RightParen)?;
+			condition
+		} else {
+			self.parse_expression(Precedence::Statement)?
+		};
+
+		let then = self.parse_block()?;
+
+		Ok(Statement::While { condition, then })
 	}
 
 	fn parse_expression(&mut self, precedence: Precedence) -> Result<Expression, ParseError> {
@@ -425,7 +443,7 @@ impl<'p> Parser<'p> {
 
 #[derive(Debug, Error)]
 pub enum ParseError {
-	#[error("Unexpected token {0:?}.")]
+	#[error("Unexpected token `{0:?}`.")]
 	UnexpectedToken(Token),
 	#[error("Entered unreachable code.")]
 	Unreachable,

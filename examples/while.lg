@@ -1,0 +1,6 @@
+create lugli = 10
+
+while lugli != 0 {
+	println!("lugli = " + lugli)
+	lugli = lugli - 1
+}
