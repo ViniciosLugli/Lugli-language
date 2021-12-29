@@ -34,6 +34,9 @@ pub enum InterpreterResult {
 	#[error("")]
 	Break,
 
+	#[error("")]
+	Continue,
+
 	#[error("Undefined variable: {0}.")]
 	UndefinedVariable(String),
 
@@ -121,7 +124,7 @@ impl<'i> Interpreter<'i> {
 
 				let set_index: bool = index.is_some();
 
-				'outer: for (i, item) in items.borrow().iter().enumerate() {
+				'outer_for: for (i, item) in items.borrow().iter().enumerate() {
 					self.env_mut().set(value.clone(), item.clone());
 
 					if set_index {
@@ -130,7 +133,8 @@ impl<'i> Interpreter<'i> {
 
 					for statement in then.clone() {
 						match self.run_statement(statement) {
-							Err(InterpreterResult::Break) => break 'outer,
+							Err(InterpreterResult::Break) => break 'outer_for,
+							Err(InterpreterResult::Continue) => break,
 							_ => (),
 						}
 					}
@@ -143,10 +147,10 @@ impl<'i> Interpreter<'i> {
 				}
 			}
 			Statement::While { condition, then } => {
-				'outer: while self.run_expression(condition.clone())?.to_bool() {
+				'outer_while: while self.run_expression(condition.clone())?.to_bool() {
 					for statement in then.clone() {
 						match self.run_statement(statement) {
-							Err(InterpreterResult::Break) => break 'outer,
+							Err(InterpreterResult::Break) => break 'outer_while,
 							_ => (),
 						}
 					}
@@ -173,6 +177,9 @@ impl<'i> Interpreter<'i> {
 			}
 			Statement::Break => {
 				return Err(InterpreterResult::Break);
+			}
+			Statement::Continue => {
+				return Err(InterpreterResult::Continue);
 			}
 			_ => todo!("{:?}", statement),
 		})

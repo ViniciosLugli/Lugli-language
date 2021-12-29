@@ -14,3 +14,12 @@ for name in names {
     println!(name)
     break
 }
+
+println!("-- continue skipping index 2 and 4 --")
+for (i, name) in names {
+    if i == 2 || i == 4{
+        continue
+    }
+
+    println!(i + ". " + name)
+}

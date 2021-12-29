@@ -11,6 +11,8 @@ impl NumberObject {
 			"integer?" => number_is_integer,
 			"float?" => number_is_float,
 			"round!" => round_number,
+			"even?" => number_is_even,
+			"odd?" => number_is_odd,
 			_ => panic!("Undefined method: `{}` for Number object", name),
 		}
 	}
@@ -43,4 +45,21 @@ fn round_number(_: &mut Interpreter, context: Value, arguments: Vec<Value>) -> R
 	let rounded: f64 = format!("{:.1$}", number, precision).parse().unwrap();
 
 	Ok(Value::Number(rounded))
+}
+
+fn number_is_even(_: &mut Interpreter, context: Value, arguments: Vec<Value>) -> Result<Value, InterpreterResult> {
+	super::arity("Number.even?", 0, &arguments);
+
+	let number = context.to_number();
+	println!("{}", number);
+	println!("{:?}", Value::Bool(number % 2.0 == 0.0));
+	Ok(Value::Bool(number % 2.0 == 0.0))
+}
+
+fn number_is_odd(_: &mut Interpreter, context: Value, arguments: Vec<Value>) -> Result<Value, InterpreterResult> {
+	super::arity("Number.odd?", 0, &arguments);
+
+	let number = context.to_number();
+
+	Ok(Value::Bool(number % 2.0 == 1.0))
 }

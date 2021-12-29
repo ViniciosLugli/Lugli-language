@@ -86,6 +86,11 @@ impl<'p> Parser<'p> {
 
 				Ok(Statement::Break)
 			}
+			Token::Continue => {
+				self.expect_token_and_read(Token::Continue)?;
+
+				Ok(Statement::Continue)
+			}
 			_ => Ok(Statement::Expression { expression: self.parse_expression(Precedence::Lowest)? }),
 		}
 	}
