@@ -1,3 +1,3 @@
-let name = "Ryan"
+create name = "Ryan"
 
 println!(name)

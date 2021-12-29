@@ -17,7 +17,7 @@ impl ListObject {
 			"filter" => list_filter,
 			"each" => list_each,
 			"map" => list_map,
-			"first!" => list_first,
+			"first" => list_first,
 			_ => panic!("Undefined method: {}", name),
 		}
 	}

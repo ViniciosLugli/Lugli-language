@@ -1,4 +1,4 @@
-let test = "cool"
+create test = "cool"
 
 test.example = fn () {}
 
@@ -6,17 +6,17 @@ struct Person {
     name
 }
 
-let string = "testing"
+create string = "testing"
 string[] = "c"
 
 Person { email: "testing" }
 
-let string = "testing"
+create string = "testing"
 
 for c in string {
 
 }
 
-let person = Person { name: "Ryan" }
+create person = Person { name: "Ryan" }
 
 println!(person.email)

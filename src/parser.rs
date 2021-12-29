@@ -67,7 +67,8 @@ impl<'p> Parser<'p> {
 		match self.current {
 			Token::Fn => self.parse_fn(true),
 			Token::Struct => self.parse_struct(),
-			Token::Let => self.parse_let(),
+			Token::Create => self.parse_create(),
+			Token::Const => self.parse_const(),
 			Token::If => self.parse_if(),
 			Token::For => self.parse_for(),
 			Token::Return => {
@@ -294,8 +295,8 @@ impl<'p> Parser<'p> {
 		Ok(Statement::If { condition, then, otherwise })
 	}
 
-	fn parse_let(&mut self) -> Result<Statement, ParseError> {
-		self.expect_token_and_read(Token::Let)?;
+	fn parse_create(&mut self) -> Result<Statement, ParseError> {
+		self.expect_token_and_read(Token::Create)?;
 
 		let name: Identifier = self.expect_identifier_and_read()?.into();
 		let initial: Option<Expression> = if self.current_is(Token::Assign) {
@@ -306,7 +307,18 @@ impl<'p> Parser<'p> {
 			None
 		};
 
-		Ok(Statement::LetDeclaration { name, initial })
+		Ok(Statement::CreateDeclaration { name, initial })
+	}
+
+	fn parse_const(&mut self) -> Result<Statement, ParseError> {
+		self.expect_token_and_read(Token::Const)?;
+
+		let name: Identifier = self.expect_identifier_and_read()?.into();
+		self.expect_token_and_read(Token::Assign)?;
+
+		let initial = self.parse_expression(Precedence::Lowest)?;
+
+		Ok(Statement::ConstDeclaration { name, initial })
 	}
 
 	fn parse_struct(&mut self) -> Result<Statement, ParseError> {
@@ -461,13 +473,13 @@ mod tests {
 			lex_and_parse(
 				"
                 fn say_hello() {
-                    let name = true
+                    create name = true
                 }
             "
 			),
 			vec![Statement::FunctionDeclaration {
 				name: String::from("say_hello"),
-				body: vec![Statement::LetDeclaration { name: String::from("name"), initial: Expression::Bool(true).some() }],
+				body: vec![Statement::CreateDeclaration { name: String::from("name"), initial: Expression::Bool(true).some() }],
 				params: vec![]
 			}]
 		)
@@ -475,11 +487,11 @@ mod tests {
 
 	#[test]
 	fn it_can_parse_let_declarations() {
-		assert_eq!(lex_and_parse("let name"), vec![Statement::LetDeclaration { name: String::from("name"), initial: None }]);
+		assert_eq!(lex_and_parse("create name"), vec![Statement::CreateDeclaration { name: String::from("name"), initial: None }]);
 
 		assert_eq!(
-			lex_and_parse("let name = true"),
-			vec![Statement::LetDeclaration { name: String::from("name"), initial: Expression::Bool(true).some() }]
+			lex_and_parse("create name = true"),
+			vec![Statement::CreateDeclaration { name: String::from("name"), initial: Expression::Bool(true).some() }]
 		);
 	}
 
@@ -586,12 +598,12 @@ mod tests {
 		assert_eq!(
 			lex_and_parse(
 				"if true {
-                let number = 1
+                create number = 1
             }"
 			),
 			vec![Statement::If {
 				condition: Expression::Bool(true),
-				then: vec![Statement::LetDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) },],
+				then: vec![Statement::CreateDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) },],
 				otherwise: None
 			}]
 		);
@@ -599,15 +611,15 @@ mod tests {
 		assert_eq!(
 			lex_and_parse(
 				"if false {
-                let number = 1
+                create number = 1
             } else {
-                let number = 2
+                create number = 2
             }"
 			),
 			vec![Statement::If {
 				condition: Expression::Bool(false),
-				then: vec![Statement::LetDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) },],
-				otherwise: Some(vec![Statement::LetDeclaration { name: String::from("number"), initial: Some(Expression::Number(2.0)) },])
+				then: vec![Statement::CreateDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) },],
+				otherwise: Some(vec![Statement::CreateDeclaration { name: String::from("number"), initial: Some(Expression::Number(2.0)) },])
 			}]
 		);
 	}

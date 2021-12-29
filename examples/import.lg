@@ -1,0 +1,3 @@
+import!("./module")
+
+Person.say("Hi import module!")

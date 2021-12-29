@@ -1,4 +1,4 @@
-let list = ["List", "Of", "Names"]
+create list = ["List", "Of", "Names"]
 
 println!(list)
 
@@ -6,7 +6,7 @@ println!(list[0])
 
 list[0] = "foo"
 
-let name = list[0]
+create name = list[0]
 
 println!(name)
 
@@ -14,7 +14,7 @@ list[] = "bar"
 
 println!(list)
 
-let nested = [
+create nested = [
     ["Person", "person@test.com"],
     ["NotPerson", "NotPerson@test.com"]
 ]

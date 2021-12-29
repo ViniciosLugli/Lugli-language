@@ -1,9 +1,9 @@
-let sum = 2 + 3
-let product = 2 * 3
-let subtraction = 3 - 2
-let division = 3 / 2
-let precedence = 2 + 3 * 2 / 2
-let pow = 2 ** 8
+create sum = 2 + 3
+create product = 2 * 3
+create subtraction = 3 - 2
+create division = 3 / 2
+create precedence = 2 + 3 * 2 / 2
+create pow = 2 ** 8
 
 println!(sum)
 println!(product)

@@ -7,7 +7,7 @@ Person.new = fn (name, email) {
     return Person { name, email }
 }
 
-let person = Person.new("Lugli", "lugli@test.com")
+create person = Person.new("Lugli", "lugli@test.com")
 
 println!(person.name)
 
@@ -15,7 +15,7 @@ struct Nested {
     person
 }
 
-let nested = Nested {
+create nested = Nested {
     person: Person {
         name: "Lugli",
         email: "lugli@test.com",

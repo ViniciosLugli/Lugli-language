@@ -1,4 +1,4 @@
-let name = "Ryan"
+create name = "Ryan"
 
 println!(name.contains?("Ry"))
 println!(name.startsWith?("Ry"))

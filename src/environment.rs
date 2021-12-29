@@ -57,6 +57,7 @@ pub enum Value {
 	Function { name: String, params: Vec<Parameter>, body: Block, environment: Option<Environment>, context: Option<Expression> },
 	NativeFunction { name: String, callback: NativeFunctionCallback },
 	NativeMethod { name: String, callback: NativeMethodCallback, context: Expression },
+	Constant(Box<Value>),
 }
 
 impl Debug for Value {
@@ -65,6 +66,7 @@ impl Debug for Value {
 			f,
 			"{}",
 			match self {
+				Value::Constant(v) => format!("{:?}", v),
 				Value::Number(n) => n.to_string(),
 				Value::String(s) => s.to_string(),
 				Value::Null => "null".to_string(),
@@ -126,6 +128,7 @@ impl Value {
 	pub fn to_vec(self) -> Rc<RefCell<Vec<Value>>> {
 		match self {
 			Value::List(list) => list,
+			Value::Constant(v) => v.to_vec(),
 			_ => unreachable!(),
 		}
 	}
@@ -139,6 +142,7 @@ impl Value {
 				Ok(f) => f,
 				Err(_) => 0.0,
 			},
+			Value::Constant(v) => v.to_number(),
 			_ => unreachable!(),
 		}
 	}
@@ -156,6 +160,7 @@ impl Value {
 			}
 			Value::Null => "".to_string(),
 			v @ Value::Function { .. } | v @ Value::StructInstance { .. } | v @ Value::List(..) => format!("{:?}", v),
+			Value::Constant(v) => v.to_string(),
 			_ => todo!(),
 		}
 	}
@@ -165,17 +170,19 @@ impl Value {
 			Value::Bool(true) | Value::Function { .. } => true,
 			Value::String(s) => !s.is_empty(),
 			Value::Number(n) => n > 0.0,
+			Value::Constant(v) => v.to_bool(),
 			_ => false,
 		}
 	}
 
 	pub fn is(self, other: Value) -> bool {
-		match (self, other) {
+		match (self, other.clone()) {
 			(Value::String(l), r) => l == r.to_string(),
 			(Value::Number(n), r) => n == r.to_number(),
 			(Value::Bool(true), r) => r.to_bool() == true,
 			(Value::Bool(false), r) => r.to_bool() == false,
 			(Value::Null, Value::Null) => true,
+			(Value::Constant(v), _) => v.is(other),
 			_ => false,
 		}
 	}
@@ -192,6 +199,8 @@ impl Value {
 				_ => unreachable!(),
 			},
 			Value::Struct { .. } => "struct".into(),
+			Value::List(..) => "list".into(),
+			Value::Constant(v) => v.typestring(),
 			_ => unreachable!(),
 		}
 	}

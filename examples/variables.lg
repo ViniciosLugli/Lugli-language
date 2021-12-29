@@ -1,2 +1,2 @@
-let age = 100
-let name = "Lugli"
+create age = 100
+create name = "Lugli"

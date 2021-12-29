@@ -1,6 +1,6 @@
-let prefix = "Hello, "
+create prefix = "Hello, "
 
-let say_hello = fn (name) {
+create say_hello = fn (name) {
     println!(prefix + name)
 }
 

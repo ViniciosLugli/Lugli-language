@@ -1,0 +1,5 @@
+struct Person {}
+
+Person.say = fn (str) {
+    println!(str)
+}

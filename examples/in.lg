@@ -1,4 +1,4 @@
-let test = ["foo", "bar"]
+create test = ["foo", "bar"]
 
 if "foo" in names {
     println!("foo is in names")

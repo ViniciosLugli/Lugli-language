@@ -1,6 +1,6 @@
-let negate = -21
-let bang = ! false
-let negate_and_multiply = -1 * 3
+create negate = -21
+create bang = ! false
+create negate_and_multiply = -1 * 3
 
 println!("negate: " + negate)
 

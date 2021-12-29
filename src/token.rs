@@ -30,8 +30,10 @@ fn to_float(lex: &mut Lexer<Token>) -> Option<f64> {
 pub enum Token {
 	#[token("fn")]
 	Fn,
-	#[token("let")]
-	Let,
+	#[token("create")]
+	Create,
+	#[token("const")]
+	Const,
 	#[token("if")]
 	If,
 	#[token("else")]
@@ -142,10 +144,10 @@ mod tests {
 
 	#[test]
 	fn it_can_recognise_reserved_keywords() {
-		let mut lexer = Token::lexer("fn let true false if else while struct");
+		let mut lexer = Token::lexer("fn create true false if else while struct");
 
 		assert_eq!(lexer.next(), Some(Token::Fn));
-		assert_eq!(lexer.next(), Some(Token::Let));
+		assert_eq!(lexer.next(), Some(Token::Create));
 		assert_eq!(lexer.next(), Some(Token::True));
 		assert_eq!(lexer.next(), Some(Token::False));
 		assert_eq!(lexer.next(), Some(Token::If));

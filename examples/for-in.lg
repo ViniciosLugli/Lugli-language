@@ -1,4 +1,4 @@
-let names = ["Lugli", "Gabs", "Edu Barreto", "Lucas gay", "Teugo", "Julho", "Zap Zap", "Pucca", "Campos"]
+create names = ["Lugli", "Gabs", "Edu Barreto", "Lucas gay", "Teugo", "Julho", "Zap Zap", "Pucca", "Campos"]
 
 for name in names {
     println!(name)

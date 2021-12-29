@@ -1,3 +1,5 @@
+use crate::parser::parse;
+use crate::token::generate;
 use crate::{environment::Value, interpreter::Interpreter};
 
 mod list;
@@ -38,4 +40,39 @@ pub fn r#type(_: &mut Interpreter, args: Vec<Value>) -> Value {
 	let arg = args.first().unwrap();
 
 	Value::String(arg.clone().typestring())
+}
+
+pub fn import(interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
+	arity("require!", 1, &args);
+
+	let path = args.first().unwrap().clone().to_string();
+	let directory = interpreter.path().parent().unwrap().to_path_buf();
+
+	// Handle relative paths.
+	if path.starts_with(".") {
+		let mut module_path = directory.clone();
+		if path.ends_with(".lg") {
+			module_path.push(path);
+		} else {
+			module_path.push(path + ".lg");
+		}
+
+		let module_path = module_path.canonicalize().unwrap();
+		let contents = ::std::fs::read_to_string(&module_path).unwrap();
+
+		let tokens = generate(&contents);
+		let ast = parse(tokens).unwrap(); // TODO: Handle errors here.
+
+		let value = match interpreter.exec(ast) {
+			Ok(_) => Value::Null,
+			Err(e) => {
+				e.print();
+				std::process::exit(1);
+			}
+		};
+
+		return value;
+	}
+
+	panic!("Cannot find module.")
 }
