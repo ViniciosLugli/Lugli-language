@@ -23,20 +23,20 @@ impl ListObject {
 	}
 }
 
-fn list_is_empty(_: &mut Interpreter, context: Value, arguments: Vec<Value>) -> Result<Value, InterpreterResult> {
-	super::arity("List.empty?()", 0, &arguments);
+fn list_is_empty(_: &mut Interpreter, context: Value, args: Vec<Value>) -> Result<Value, InterpreterResult> {
+	super::arity("List.empty?()", 0, &args, false);
 
 	Ok(Value::Bool(context.to_vec().borrow().is_empty()))
 }
 
-fn list_is_not_empty(_: &mut Interpreter, context: Value, arguments: Vec<Value>) -> Result<Value, InterpreterResult> {
-	super::arity("List.notEmpty?()", 0, &arguments);
+fn list_is_not_empty(_: &mut Interpreter, context: Value, args: Vec<Value>) -> Result<Value, InterpreterResult> {
+	super::arity("List.notEmpty?()", 0, &args, false);
 
 	Ok(Value::Bool(!context.to_vec().borrow().is_empty()))
 }
 
-fn list_reverse(_: &mut Interpreter, context: Value, arguments: Vec<Value>) -> Result<Value, InterpreterResult> {
-	super::arity("List.reverse!()", 0, &arguments);
+fn list_reverse(_: &mut Interpreter, context: Value, args: Vec<Value>) -> Result<Value, InterpreterResult> {
+	super::arity("List.reverse!()", 0, &args, false);
 
 	let mut list = context.to_vec().borrow().clone();
 	list.reverse();
@@ -44,20 +44,20 @@ fn list_reverse(_: &mut Interpreter, context: Value, arguments: Vec<Value>) -> R
 	Ok(Value::List(Rc::new(RefCell::new(list))))
 }
 
-fn list_join(_: &mut Interpreter, context: Value, arguments: Vec<Value>) -> Result<Value, InterpreterResult> {
-	super::arity("List.join!()", 1, &arguments);
+fn list_join(_: &mut Interpreter, context: Value, args: Vec<Value>) -> Result<Value, InterpreterResult> {
+	super::arity("List.join!()", 1, &args, false);
 
 	let list = context.to_vec().borrow().clone();
-	let separator = arguments.get(0).unwrap().clone().to_string();
+	let separator = args.get(0).unwrap().clone().to_string();
 	let result = list.into_iter().map(|a| a.to_string()).collect::<Vec<String>>().join(&separator);
 
 	Ok(Value::String(result))
 }
 
-fn list_filter(interpreter: &mut Interpreter, context: Value, arguments: Vec<Value>) -> Result<Value, InterpreterResult> {
-	super::arity("List.filter()", 1, &arguments);
+fn list_filter(interpreter: &mut Interpreter, context: Value, args: Vec<Value>) -> Result<Value, InterpreterResult> {
+	super::arity("List.filter()", 1, &args, false);
 
-	let callback = arguments.get(0).unwrap().clone();
+	let callback = args.get(0).unwrap().clone();
 	let mut new_list: Vec<Value> = Vec::new();
 
 	for item in context.to_vec().borrow().clone().into_iter() {
@@ -69,10 +69,10 @@ fn list_filter(interpreter: &mut Interpreter, context: Value, arguments: Vec<Val
 	Ok(Value::List(Rc::new(RefCell::new(new_list))))
 }
 
-fn list_each(interpreter: &mut Interpreter, context: Value, arguments: Vec<Value>) -> Result<Value, InterpreterResult> {
-	super::arity("List.each()", 1, &arguments);
+fn list_each(interpreter: &mut Interpreter, context: Value, args: Vec<Value>) -> Result<Value, InterpreterResult> {
+	super::arity("List.each()", 1, &args, false);
 
-	let callback = arguments.get(0).unwrap().clone();
+	let callback = args.get(0).unwrap().clone();
 
 	for v in context.clone().to_vec().borrow().iter() {
 		interpreter.call(callback.clone(), vec![v.clone()])?.to_bool();
@@ -81,10 +81,10 @@ fn list_each(interpreter: &mut Interpreter, context: Value, arguments: Vec<Value
 	Ok(context)
 }
 
-fn list_map(interpreter: &mut Interpreter, context: Value, arguments: Vec<Value>) -> Result<Value, InterpreterResult> {
-	super::arity("List.map()", 1, &arguments);
+fn list_map(interpreter: &mut Interpreter, context: Value, args: Vec<Value>) -> Result<Value, InterpreterResult> {
+	super::arity("List.map()", 1, &args, false);
 
-	let callback = arguments.get(0).unwrap().clone();
+	let callback = args.get(0).unwrap().clone();
 	let mut list = context.clone().to_vec().borrow().clone();
 
 	for (i, v) in list.clone().iter().enumerate() {
@@ -96,15 +96,15 @@ fn list_map(interpreter: &mut Interpreter, context: Value, arguments: Vec<Value>
 	Ok(Value::List(Rc::new(RefCell::new(list))))
 }
 
-fn list_first(interpreter: &mut Interpreter, context: Value, arguments: Vec<Value>) -> Result<Value, InterpreterResult> {
+fn list_first(interpreter: &mut Interpreter, context: Value, args: Vec<Value>) -> Result<Value, InterpreterResult> {
 	let list = context.clone().to_vec().borrow().clone();
 
 	if list.is_empty() {
 		return Ok(Value::Null);
 	}
 
-	if arguments.len() == 1 {
-		let callback = arguments.get(0).unwrap().clone();
+	if args.len() == 1 {
+		let callback = args.get(0).unwrap().clone();
 
 		for v in list.iter() {
 			let result = interpreter.call(callback.clone(), vec![v.clone()])?;

@@ -10,13 +10,20 @@ pub use list::ListObject;
 pub use number::NumberObject;
 pub use string::StringObject;
 
-pub fn arity(name: &str, arity: usize, arguments: &Vec<Value>) {
-	if arity != arguments.len() {
-		panic!("Method {} expected {} arguments, received {}.", name, arity, arguments.len());
+pub fn arity(name: &str, arity: usize, arguments: &Vec<Value>, multiples_entry: bool) -> () {
+	if multiples_entry {
+		if arguments.len() < arity {
+			panic!("{} expects {} arguments, but {} were given", name, arity, arguments.len());
+		}
+	} else {
+		if arguments.len() != arity {
+			panic!("{} expects {} arguments, but {} were given", name, arity, arguments.len());
+		}
 	}
 }
 
 pub fn println(_: &mut Interpreter, args: Vec<Value>) -> Value {
+	arity("println!", 1, &args, true);
 	let arg = args.get(0).unwrap().clone();
 
 	println!("{}", arg.to_string());
@@ -25,6 +32,8 @@ pub fn println(_: &mut Interpreter, args: Vec<Value>) -> Value {
 }
 
 pub fn print(_: &mut Interpreter, args: Vec<Value>) -> Value {
+	arity("print!", 1, &args, true);
+
 	let arg = args.get(0).unwrap().clone();
 
 	print!("{}", arg.to_string());
@@ -33,9 +42,7 @@ pub fn print(_: &mut Interpreter, args: Vec<Value>) -> Value {
 }
 
 pub fn r#type(_: &mut Interpreter, args: Vec<Value>) -> Value {
-	if args.is_empty() || args.len() > 1 {
-		panic!("Function {} expects {} argument, received {}", "type", 1, args.len());
-	}
+	arity("type!", 1, &args, false);
 
 	let arg = args.first().unwrap();
 
@@ -43,7 +50,7 @@ pub fn r#type(_: &mut Interpreter, args: Vec<Value>) -> Value {
 }
 
 pub fn import(interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
-	arity("import!", 1, &args);
+	arity("import!", 1, &args, false);
 
 	let path = args.first().unwrap().clone().to_string();
 	let directory = interpreter.path().parent().unwrap().to_path_buf();
@@ -78,4 +85,8 @@ pub fn import(interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
 	};
 
 	return value;
+}
+
+pub fn exit(interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
+	std::process::exit(if args.is_empty() { 0 } else { args.get(0).unwrap().clone().to_number() as i32 });
 }

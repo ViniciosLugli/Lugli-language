@@ -16,6 +16,7 @@ pub fn register_global_functions(interpreter: &mut Interpreter) {
 	interpreter.define_global_function("print!", crate::stdlib::print);
 	interpreter.define_global_function("type?", crate::stdlib::r#type);
 	interpreter.define_global_function("import!", crate::stdlib::import);
+	interpreter.define_global_function("exit!", crate::stdlib::exit);
 }
 
 pub fn interpret(ast: Program, path: PathBuf) -> Result<(), InterpreterResult> {
