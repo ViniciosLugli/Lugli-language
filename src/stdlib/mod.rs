@@ -48,9 +48,6 @@ pub fn import(interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
 	let path = args.first().unwrap().clone().to_string();
 	let directory = interpreter.path().parent().unwrap().to_path_buf();
 
-	// Handle relative paths.
-	if path.starts_with(".") {}
-
 	let mut module_path = directory.clone();
 	if path.ends_with(".lg") {
 		module_path.push(path);
