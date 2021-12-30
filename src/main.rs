@@ -8,7 +8,7 @@ mod parser;
 mod stdlib;
 mod token;
 
-const VERSION: &str = "0.1-beta";
+const VERSION: &str = "0.2-beta";
 
 fn main() {
 	let matches = App::new("Lugli")

@@ -1,6 +1,6 @@
 [package]
 name = "Lugli-language-compiler"
-version = "0.1.0"
+version = "0.2.0"
 description = "My 'lugli' language compiler for learning purposes"
 authors = ["Vinicios Lugli <vinicioslugli@gmail.com>"]
 edition = "2018"
