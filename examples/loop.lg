@@ -1,0 +1,5 @@
+loop {
+	println!("Im in the loop")
+	break
+}
+println!("Im out of the loop")

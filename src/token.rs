@@ -52,6 +52,9 @@ pub enum Token {
 	#[token("while")]
 	While,
 
+	#[token("loop")]
+	Loop,
+
 	#[token("return")]
 	Return,
 

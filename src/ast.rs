@@ -24,6 +24,7 @@ pub enum Statement {
 	If { condition: ConditionBlock, others_conditions: Option<Vec<ConditionBlock>>, otherwise: Option<Block> },
 	For { iterable: Expression, value: Identifier, index: Option<Identifier>, then: Block },
 	While { condition: ConditionBlock },
+	Loop { body: Block },
 	Expression { expression: Expression },
 }
 

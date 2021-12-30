@@ -72,6 +72,7 @@ impl<'p> Parser<'p> {
 			Token::If => self.parse_if(),
 			Token::For => self.parse_for(),
 			Token::While => self.parse_while(),
+			Token::Loop => self.parse_loop(),
 			Token::Return => self.parse_return(),
 			Token::Break => self.parse_break(),
 			Token::Continue => self.parse_continue(),
@@ -338,6 +339,14 @@ impl<'p> Parser<'p> {
 		let then = self.parse_block()?;
 
 		Ok(Statement::While { condition: ConditionBlock { expression: condition, then } })
+	}
+
+	fn parse_loop(&mut self) -> Result<Statement, ParseError> {
+		self.expect_token_and_read(Token::Loop)?;
+
+		let then = self.parse_block()?;
+
+		Ok(Statement::Loop { body: then })
 	}
 
 	fn parse_return(&mut self) -> Result<Statement, ParseError> {

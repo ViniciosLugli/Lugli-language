@@ -24,7 +24,7 @@ Example: `Lugli.exe run foo.lg`
 * [x] Basic operators ➡ +, -, *, /, ==, !=, >, <, >=, <=, &&, ||, !
 * [x] Basic functions ➡ console print, import files, get object type
 * [x] Basic if statements ➡ if, elif, else, true, false, brackets
-* [x] Basic loops ➡ for, for in, while, break
+* [x] Basic loops ➡ for, for in, while, loop, break, continue
 ---
 
 # Current embed librarys

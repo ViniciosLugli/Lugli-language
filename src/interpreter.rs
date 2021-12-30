@@ -159,6 +159,17 @@ impl<'i> Interpreter<'i> {
 					}
 				}
 			}
+
+			Statement::Loop { body } => 'outer_loop: loop {
+				for statement in body.clone() {
+					match self.run_statement(statement) {
+						Err(InterpreterResult::Break) => break 'outer_loop,
+						Err(InterpreterResult::Continue) => break,
+						Err(err) => return Err(err),
+						_ => (),
+					}
+				}
+			},
 			Statement::If { condition, others_conditions, otherwise } => {
 				let expression = self.run_expression(condition.expression)?;
 				let mut satisfied = false;
@@ -191,6 +202,7 @@ impl<'i> Interpreter<'i> {
 					}
 				}
 			}
+
 			Statement::Expression { expression } => {
 				self.run_expression(expression)?;
 			}
