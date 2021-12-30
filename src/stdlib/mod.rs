@@ -43,40 +43,42 @@ pub fn r#type(_: &mut Interpreter, args: Vec<Value>) -> Value {
 }
 
 pub fn import(interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
-	arity("require!", 1, &args);
+	arity("import!", 1, &args);
 
 	let path = args.first().unwrap().clone().to_string();
 	let directory = interpreter.path().parent().unwrap().to_path_buf();
 
 	// Handle relative paths.
-	if path.starts_with(".") {
-		let mut module_path = directory.clone();
-		if path.ends_with(".lg") {
-			module_path.push(path);
-		} else {
-			module_path.push(path + ".lg");
-		}
+	if path.starts_with(".") {}
 
-		let module_path = module_path.canonicalize().unwrap();
-		let contents = ::std::fs::read_to_string(&module_path).unwrap();
-
-		let tokens = generate(&contents);
-		let ast = if let Ok(ast) = parse(tokens) {
-			ast
-		} else {
-			panic!("Failed to parse module {}.", module_path.to_str().unwrap());
-		};
-
-		let value = match interpreter.exec(ast) {
-			Ok(_) => Value::Null,
-			Err(e) => {
-				e.print();
-				std::process::exit(1);
-			}
-		};
-
-		return value;
+	let mut module_path = directory.clone();
+	if path.ends_with(".lg") {
+		module_path.push(path);
+	} else {
+		module_path.push(path + ".lg");
 	}
 
-	panic!("Cannot find module.")
+	let module_path = module_path.canonicalize().unwrap();
+	let contents = if module_path.exists() {
+		std::fs::read_to_string(&module_path).unwrap()
+	} else {
+		panic!("File {} does not exist.", module_path.to_str().unwrap())
+	};
+
+	let tokens = generate(&contents);
+	let ast = if let Ok(ast) = parse(tokens) {
+		ast
+	} else {
+		panic!("Failed to parse module {}.", module_path.to_str().unwrap());
+	};
+
+	let value = match interpreter.exec(ast) {
+		Ok(_) => Value::Null,
+		Err(e) => {
+			e.print();
+			std::process::exit(1);
+		}
+	};
+
+	return value;
 }
