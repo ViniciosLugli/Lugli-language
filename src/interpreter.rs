@@ -147,9 +147,9 @@ impl<'i> Interpreter<'i> {
 					self.env_mut().drop(index.unwrap());
 				}
 			}
-			Statement::While { condition, then } => {
-				'outer_while: while self.run_expression(condition.clone())?.to_bool() {
-					for statement in then.clone() {
+			Statement::While { condition } => {
+				'outer_while: while self.run_expression(condition.expression.clone())?.to_bool() {
+					for statement in condition.then.clone() {
 						match self.run_statement(statement) {
 							Err(InterpreterResult::Break) => break 'outer_while,
 							Err(InterpreterResult::Continue) => break,

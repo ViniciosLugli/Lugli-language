@@ -337,7 +337,7 @@ impl<'p> Parser<'p> {
 
 		let then = self.parse_block()?;
 
-		Ok(Statement::While { condition, then })
+		Ok(Statement::While { condition: ConditionBlock { expression: condition, then } })
 	}
 
 	fn parse_return(&mut self) -> Result<Statement, ParseError> {
@@ -555,12 +555,17 @@ mod tests {
 	}
 
 	#[test]
-	fn it_can_parse_let_declarations() {
+	fn it_can_parse_create_declarations_and_const() {
 		assert_eq!(lex_and_parse("create name"), vec![Statement::CreateDeclaration { name: String::from("name"), initial: None }]);
 
 		assert_eq!(
-			lex_and_parse("create name = true"),
-			vec![Statement::CreateDeclaration { name: String::from("name"), initial: Expression::Bool(true).some() }]
+			lex_and_parse("create bool = true"),
+			vec![Statement::CreateDeclaration { name: String::from("bool"), initial: Expression::Bool(true).some() }]
+		);
+
+		assert_eq!(
+			lex_and_parse("const bool = false"),
+			vec![Statement::ConstDeclaration { name: String::from("bool"), initial: Expression::Bool(false) }]
 		);
 	}
 
@@ -660,36 +665,137 @@ mod tests {
 		);
 	}
 
-	//#[test]
-	//fn it_can_parse_if_statements() {
-	//	assert_eq!(lex_and_parse("if true {}"), vec![Statement::If { condition: Expression::Bool(true), then: vec![], otherwise: None }]);
+	#[test]
+	fn it_can_parse_if_statements() {
+		assert_eq!(
+			lex_and_parse("if true {}"),
+			vec![Statement::If {
+				condition: ConditionBlock { expression: Expression::Bool(true), then: vec![] },
+				others_conditions: None,
+				otherwise: None
+			}]
+		);
 
-	//	assert_eq!(
-	//		lex_and_parse(
-	//			"if true {
-	//            create number = 1
-	//        }"
-	//		),
-	//		vec![Statement::If {
-	//			condition: Expression::Bool(true),
-	//			then: vec![Statement::CreateDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) },],
-	//			otherwise: None
-	//		}]
-	//	);
+		assert_eq!(
+			lex_and_parse(
+				"if true {
+					create number = 1
+				}"
+			),
+			vec![Statement::If {
+				condition: ConditionBlock {
+					expression: Expression::Bool(true),
+					then: vec![Statement::CreateDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) }]
+				},
+				others_conditions: None,
+				otherwise: None
+			}]
+		);
 
-	//	assert_eq!(
-	//		lex_and_parse(
-	//			"if false {
-	//            create number = 1
-	//        } else {
-	//            create number = 2
-	//        }"
-	//		),
-	//		vec![Statement::If {
-	//			condition: Expression::Bool(false),
-	//			then: vec![Statement::CreateDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) },],
-	//			otherwise: Some(vec![Statement::CreateDeclaration { name: String::from("number"), initial: Some(Expression::Number(2.0)) },])
-	//		}]
-	//	);
-	//}
+		assert_eq!(
+			lex_and_parse(
+				"if false {
+					create number = 1
+				} else {
+					create number = 2
+				}"
+			),
+			vec![Statement::If {
+				condition: ConditionBlock {
+					expression: Expression::Bool(false),
+					then: vec![Statement::CreateDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) },]
+				},
+				others_conditions: None,
+				otherwise: Some(vec![Statement::CreateDeclaration { name: String::from("number"), initial: Some(Expression::Number(2.0)) },])
+			}]
+		);
+
+		assert_eq!(
+			lex_and_parse(
+				"if false {
+					create number = 3
+				} elif true{
+					create number = 6
+				}else {
+					create number = 9
+				}"
+			),
+			vec![Statement::If {
+				condition: ConditionBlock {
+					expression: Expression::Bool(false),
+					then: vec![Statement::CreateDeclaration { name: String::from("number"), initial: Some(Expression::Number(3.0)) },]
+				},
+				others_conditions: Some(vec![ConditionBlock {
+					expression: Expression::Bool(true),
+					then: vec![Statement::CreateDeclaration { name: String::from("number"), initial: Some(Expression::Number(6.0)) },]
+				}]),
+				otherwise: Some(vec![Statement::CreateDeclaration { name: String::from("number"), initial: Some(Expression::Number(9.0)) },])
+			}]
+		);
+	}
+
+	#[test]
+	fn it_can_parse_while_statements() {
+		assert_eq!(
+			lex_and_parse("while true {}"),
+			vec![Statement::While { condition: ConditionBlock { expression: Expression::Bool(true), then: vec![] } }]
+		);
+
+		assert_eq!(
+			lex_and_parse(
+				"while true {
+					create number = 1
+				}"
+			),
+			vec![Statement::While {
+				condition: ConditionBlock {
+					expression: Expression::Bool(true),
+					then: vec![Statement::CreateDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) }]
+				}
+			}]
+		);
+
+		assert_eq!(
+			lex_and_parse(
+				"while true {
+					break
+					create number = 1
+				}"
+			),
+			vec![Statement::While {
+				condition: ConditionBlock {
+					expression: Expression::Bool(true),
+					then: vec![
+						Statement::Break,
+						Statement::CreateDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) },
+					]
+				},
+			}]
+		);
+
+		assert_eq!(
+			lex_and_parse(
+				"while true {
+					if true {
+						continue
+					}
+					-- never touch this create number
+					create number = 1
+				}"
+			),
+			vec![Statement::While {
+				condition: ConditionBlock {
+					expression: Expression::Bool(true),
+					then: vec![
+						Statement::If {
+							condition: ConditionBlock { expression: Expression::Bool(true), then: vec![Statement::Continue] },
+							others_conditions: None,
+							otherwise: None
+						},
+						Statement::CreateDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) },
+					]
+				},
+			}]
+		);
+	}
 }

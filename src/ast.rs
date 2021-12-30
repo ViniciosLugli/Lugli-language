@@ -23,7 +23,7 @@ pub enum Statement {
 	ConstDeclaration { name: Identifier, initial: Expression },
 	If { condition: ConditionBlock, others_conditions: Option<Vec<ConditionBlock>>, otherwise: Option<Block> },
 	For { iterable: Expression, value: Identifier, index: Option<Identifier>, then: Block },
-	While { condition: Expression, then: Block },
+	While { condition: ConditionBlock },
 	Expression { expression: Expression },
 }
 

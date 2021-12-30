@@ -169,7 +169,7 @@ mod tests {
 
 	#[test]
 	fn it_can_recognise_reserved_keywords() {
-		let mut lexer = Token::lexer("fn create true false if else while for struct else if");
+		let mut lexer = Token::lexer("fn create true false if else while for struct elif");
 
 		assert_eq!(lexer.next(), Some(Token::Fn));
 		assert_eq!(lexer.next(), Some(Token::Create));
