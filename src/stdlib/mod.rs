@@ -61,7 +61,11 @@ pub fn import(interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
 		let contents = ::std::fs::read_to_string(&module_path).unwrap();
 
 		let tokens = generate(&contents);
-		let ast = parse(tokens).unwrap(); // TODO: Handle errors here.
+		let ast = if let Ok(ast) = parse(tokens) {
+			ast
+		} else {
+			panic!("Failed to parse module {}.", module_path.to_str().unwrap());
+		};
 
 		let value = match interpreter.exec(ast) {
 			Ok(_) => Value::Null,
