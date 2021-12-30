@@ -1,3 +1,5 @@
+-- All this file has errors... nothing to see here.
+
 create test = "cool"
 
 test.example = fn () {}

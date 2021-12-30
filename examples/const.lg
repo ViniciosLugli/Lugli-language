@@ -14,4 +14,4 @@ const name = "Lugli"
 
 println!(name)
 
-name = "john"
+name = "john" -- forced error
