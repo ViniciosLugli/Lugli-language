@@ -147,6 +147,7 @@ impl<'i> Interpreter<'i> {
 					self.env_mut().drop(index.unwrap());
 				}
 			}
+
 			Statement::While { condition } => {
 				'outer_while: while self.run_expression(condition.expression.clone())?.to_bool() {
 					for statement in condition.then.clone() {
@@ -170,6 +171,7 @@ impl<'i> Interpreter<'i> {
 					}
 				}
 			},
+
 			Statement::If { condition, others_conditions, otherwise } => {
 				let expression = self.run_expression(condition.expression)?;
 				let mut satisfied = false;

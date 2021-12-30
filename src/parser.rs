@@ -503,8 +503,10 @@ impl<'p> Parser<'p> {
 pub enum ParseError {
 	#[error("Unexpected token `{0:?}`.")]
 	UnexpectedToken(Token),
+
 	#[error("Unexpected token `{0:?}`, expected `{1:?}`")]
 	UnexpectedTokenExpected(Token, Token),
+
 	#[error("Entered unreachable code.")]
 	Unreachable,
 }
@@ -804,6 +806,56 @@ mod tests {
 						Statement::CreateDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) },
 					]
 				},
+			}]
+		);
+	}
+
+	#[test]
+	fn it_can_parse_loop_statements() {
+		assert_eq!(lex_and_parse("loop {}"), vec![Statement::Loop { body: vec![] }]);
+
+		assert_eq!(
+			lex_and_parse(
+				"loop {
+					create number = 1
+				}"
+			),
+			vec![Statement::Loop {
+				body: vec![Statement::CreateDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) }]
+			}]
+		);
+
+		assert_eq!(
+			lex_and_parse(
+				"loop {
+					break
+					create number = 1
+				}"
+			),
+			vec![Statement::Loop {
+				body: vec![Statement::Break, Statement::CreateDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) },]
+			}]
+		);
+
+		assert_eq!(
+			lex_and_parse(
+				"loop {
+					if true {
+						continue
+					}
+					-- never touch this create number
+					create number = 1
+				}"
+			),
+			vec![Statement::Loop {
+				body: vec![
+					Statement::If {
+						condition: ConditionBlock { expression: Expression::Bool(true), then: vec![Statement::Continue] },
+						others_conditions: None,
+						otherwise: None
+					},
+					Statement::CreateDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) },
+				]
 			}]
 		);
 	}
