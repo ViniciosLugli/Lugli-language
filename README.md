@@ -14,7 +14,7 @@ Example: `Lugli.exe run foo.lg`
 * [x] tokenizer / lexer
 * [x] parser
 * [x] runtime (compiler)
-* [ ] Module system (simple creation of libs)
+* [ ] Module system (simple creation of embed libs)
 * [ ] Linker (for other languages)
 * [ ] Optimizer / FMT
 * [ ] Debugger tools
@@ -27,13 +27,14 @@ Example: `Lugli.exe run foo.lg`
 * [x] Basic loops ➡ for, for in, while, break
 ---
 
-# Current librarys
+# Current embed librarys
 - Not yet implemented:
 
 ---
 
 Learning support from:
 - https://github.com/ryangjchandler/lagoon
+- https://github.com/ryangjchandler/pl
 - https://www.youtube.com/playlist?list=PLX0VJHnEgHeqE06mX4m2rjlOWm_GUWOTI
 
 ---
