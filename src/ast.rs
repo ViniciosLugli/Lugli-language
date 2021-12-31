@@ -51,6 +51,7 @@ pub enum Expression {
 	List(Vec<Expression>),
 }
 
+#[allow(dead_code)]
 impl Expression {
 	pub fn some(self) -> Option<Self> {
 		Some(self)

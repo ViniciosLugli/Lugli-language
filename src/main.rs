@@ -1,3 +1,4 @@
+#![allow(non_snake_case)]
 use clap::{App, Arg};
 use std::fs::read_to_string;
 

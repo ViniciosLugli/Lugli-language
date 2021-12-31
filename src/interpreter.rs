@@ -81,6 +81,7 @@ pub struct Interpreter<'i> {
 	path: PathBuf,
 }
 
+#[allow(unreachable_patterns)]
 impl<'i> Interpreter<'i> {
 	pub fn new(ast: Iter<'i, Statement>, path: PathBuf) -> Self {
 		Self { ast, environment: Rc::new(RefCell::new(Environment::new())), globals: HashMap::new(), path }

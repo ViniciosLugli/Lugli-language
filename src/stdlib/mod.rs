@@ -87,6 +87,6 @@ pub fn import(interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
 	return value;
 }
 
-pub fn exit(interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
+pub fn exit(_interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
 	std::process::exit(if args.is_empty() { 0 } else { args.get(0).unwrap().clone().to_number() as i32 });
 }
