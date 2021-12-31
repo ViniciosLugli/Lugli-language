@@ -859,4 +859,53 @@ mod tests {
 			}]
 		);
 	}
+
+	#[test]
+	fn it_can_parse_struct_declarations() {
+		assert_eq!(
+			lex_and_parse(
+				"struct Point {
+					x, y
+				}"
+			),
+			vec![Statement::StructDeclaration {
+				name: String::from("Point"),
+				fields: vec![Parameter { name: String::from("x") }, Parameter { name: String::from("y") }]
+			}]
+		);
+
+		let mut struct_fields: HashMap<Identifier, Expression> = HashMap::new();
+		struct_fields.insert(Identifier::from("name"), Expression::Identifier("name".to_owned()));
+		struct_fields.insert(Identifier::from("email"), Expression::Identifier("email".to_owned()));
+
+		assert_eq!(
+			lex_and_parse(
+				"struct Person {
+					name,
+					email
+				}
+
+				Person.new = fn (name, email) {
+					return Person { name, email }
+				}"
+			),
+			vec![
+				Statement::StructDeclaration {
+					name: "Person".to_owned(),
+					fields: vec![Parameter { name: "name".to_owned() }, Parameter { name: "email".to_owned() }]
+				},
+				Statement::Expression {
+					expression: Expression::Assign(
+						Box::new(Expression::Get(Box::new(Expression::Identifier("Person".to_owned())), "new".to_owned())),
+						Box::new(Expression::Closure(
+							vec![Parameter { name: "name".to_owned() }, Parameter { name: "email".to_owned() }],
+							vec![Statement::Return {
+								value: Expression::Struct(Box::new(Expression::Identifier("Person".to_owned())), struct_fields)
+							}]
+						))
+					)
+				}
+			]
+		);
+	}
 }
