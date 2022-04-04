@@ -14,7 +14,7 @@ Example: `Lugli.exe run foo.lg`
 * [x] tokenizer / lexer
 * [x] parser
 * [x] runtime (compiler)
-* [ ] Module system (simple creation of embed libs)
+* [x] Module system (simple creation of embed libs)
 * [ ] Linker (for other languages)
 * [ ] Optimizer / FMT
 * [ ] Debugger tools
