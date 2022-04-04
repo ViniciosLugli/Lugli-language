@@ -1,5 +1,10 @@
+
+create i = 1
 loop {
 	println!("Im in the loop")
-	break
+	i *= 2
+	if i == 16 {
+		break
+	}
 }
 println!("Im out of the loop")

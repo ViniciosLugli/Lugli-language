@@ -25,6 +25,10 @@ enum Precedence {
 	Lowest,
 	Statement,
 	Assign,
+	PlusAssign,
+	MinusAssign,
+	MultiplyAssign,
+	DivideAssign,
 	AndOr,
 	LessThanGreaterThan,
 	Equals,
@@ -45,6 +49,10 @@ impl Precedence {
 			Token::Equals | Token::NotEquals => Self::Equals,
 			Token::And | Token::Or | Token::In | Token::NotIn => Self::AndOr,
 			Token::Assign => Self::Assign,
+			Token::PlusAssign => Self::PlusAssign,
+			Token::MinusAssign => Self::MinusAssign,
+			Token::MultiplyAssign => Self::MultiplyAssign,
+			Token::DivideAssign => Self::DivideAssign,
 			Token::LeftBrace => Self::Statement,
 			Token::Pow => Self::Pow,
 			_ => Self::Lowest,
@@ -272,6 +280,39 @@ impl<'p> Parser<'p> {
 
 				Some(Expression::Assign(Box::new(left), Box::new(right)))
 			}
+
+			Token::PlusAssign => {
+				self.read();
+
+				let right = self.parse_expression(Precedence::Lowest)?;
+
+				Some(Expression::MathAssign(Box::new(left), Op::Add, Box::new(right)))
+			}
+
+			Token::MinusAssign => {
+				self.read();
+
+				let right = self.parse_expression(Precedence::Lowest)?;
+
+				Some(Expression::MathAssign(Box::new(left), Op::Subtract, Box::new(right)))
+			}
+
+			Token::MultiplyAssign => {
+				self.read();
+
+				let right = self.parse_expression(Precedence::Lowest)?;
+
+				Some(Expression::MathAssign(Box::new(left), Op::Multiply, Box::new(right)))
+			}
+
+			Token::DivideAssign => {
+				self.read();
+
+				let right = self.parse_expression(Precedence::Lowest)?;
+
+				Some(Expression::MathAssign(Box::new(left), Op::Divide, Box::new(right)))
+			}
+
 			_ => None,
 		})
 	}

@@ -94,6 +94,15 @@ pub enum Token {
 	#[token("]")]
 	RightBracket,
 
+	#[token("+=")]
+	PlusAssign,
+	#[token("-=")]
+	MinusAssign,
+	#[token("*=")]
+	MultiplyAssign,
+	#[token("/=")]
+	DivideAssign,
+
 	#[token("+")]
 	Plus,
 	#[token("-")]
@@ -204,6 +213,16 @@ mod tests {
 		assert_eq!(lexer.next(), Some(Token::NotEquals));
 		assert_eq!(lexer.next(), Some(Token::Colon));
 		assert_eq!(lexer.next(), Some(Token::Dot));
+	}
+
+	#[test]
+	fn it_can_recognise_symbols_equal() {
+		let mut lexer = Token::lexer("+= -= *= /=");
+
+		assert_eq!(lexer.next(), Some(Token::PlusAssign));
+		assert_eq!(lexer.next(), Some(Token::MinusAssign));
+		assert_eq!(lexer.next(), Some(Token::MultiplyAssign));
+		assert_eq!(lexer.next(), Some(Token::DivideAssign));
 	}
 
 	#[test]

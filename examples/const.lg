@@ -4,8 +4,6 @@ struct Person {
 
 const Lugli = Person { name: "Lugli" }
 
-println!(Ryan.name)
-
 Lugli.name = "testing"
 
 println!(Lugli.name)
@@ -14,4 +12,4 @@ const name = "Lugli"
 
 println!(name)
 
-name = "john" -- forced error
+-- name = "john" -- forced error

@@ -46,6 +46,7 @@ pub enum Expression {
 	Null,
 	Identifier(Identifier),
 	Assign(Box<Expression>, Box<Expression>),
+	MathAssign(Box<Expression>, Op, Box<Expression>),
 	Infix(Box<Expression>, Op, Box<Expression>),
 	Prefix(Op, Box<Expression>),
 	Call(Box<Expression>, Vec<Expression>),

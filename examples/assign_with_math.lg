@@ -1,0 +1,10 @@
+create i = 0
+println!(i)
+
+i += 1
+
+println!(i)
+
+i += 1
+
+println!(i)

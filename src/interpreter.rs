@@ -442,6 +442,37 @@ impl<'i> Interpreter<'i> {
 					_ => unreachable!(),
 				}
 			}
+
+			Expression::MathAssign(target, op, value) => {
+				let target_expr = self.run_expression(*target.clone())?;
+				let value = self.run_expression(*value)?;
+
+				// println!("{:?} | {:?}", target_expr.clone(), value.clone());
+
+				match target_expr.clone() {
+					Value::Number(n) => {
+						match *target.clone() {
+							Expression::Identifier(i) => {
+								self.env_mut().set(
+									i,
+									Value::Number(match op {
+										Op::Add => n + value.clone().to_number(),
+										Op::Subtract => n - value.clone().to_number(),
+										Op::Multiply => n * value.clone().to_number(),
+										Op::Divide => n / value.clone().to_number(),
+										_ => unreachable!(),
+									}),
+								);
+							}
+							_ => unimplemented!(),
+						}
+
+						Value::Number(n + value.to_number())
+					}
+					_ => unreachable!(),
+				}
+			}
+
 			Expression::Assign(target, value) => {
 				let value = self.run_expression(*value)?;
 
