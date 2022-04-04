@@ -1,10 +1,15 @@
 use hashbrown::HashMap;
 
-use crate::token::Token;
+use crate::{environment::NativeFunctionCallback, token::Token};
 
 pub type Program = Vec<Statement>;
 pub type Block = Vec<Statement>;
 pub type Identifier = String;
+
+pub struct Method {
+	name: String,
+	callback: NativeFunctionCallback,
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ConditionBlock {

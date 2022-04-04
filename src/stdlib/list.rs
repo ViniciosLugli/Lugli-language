@@ -14,11 +14,11 @@ impl ListObject {
 			"notEmpty?" => list_is_not_empty,
 			"reverse!" => list_reverse,
 			"join!" => list_join,
-			"filter" => list_filter,
-			"each" => list_each,
-			"map" => list_map,
-			"first" => list_first,
-			_ => panic!("Undefined method: {}", name),
+			"filter!" => list_filter,
+			"each!" => list_each,
+			"map!" => list_map,
+			"first!" => list_first,
+			_ => panic!("Undefined method: {} for List Object", name),
 		}
 	}
 }
@@ -55,7 +55,7 @@ fn list_join(_: &mut Interpreter, context: Value, args: Vec<Value>) -> Result<Va
 }
 
 fn list_filter(interpreter: &mut Interpreter, context: Value, args: Vec<Value>) -> Result<Value, InterpreterResult> {
-	super::arity("List.filter()", 1, &args, false);
+	super::arity("List.filter!()", 1, &args, false);
 
 	let callback = args.get(0).unwrap().clone();
 	let mut new_list: Vec<Value> = Vec::new();
@@ -70,7 +70,7 @@ fn list_filter(interpreter: &mut Interpreter, context: Value, args: Vec<Value>) 
 }
 
 fn list_each(interpreter: &mut Interpreter, context: Value, args: Vec<Value>) -> Result<Value, InterpreterResult> {
-	super::arity("List.each()", 1, &args, false);
+	super::arity("List.each!()", 1, &args, false);
 
 	let callback = args.get(0).unwrap().clone();
 
@@ -82,7 +82,7 @@ fn list_each(interpreter: &mut Interpreter, context: Value, args: Vec<Value>) ->
 }
 
 fn list_map(interpreter: &mut Interpreter, context: Value, args: Vec<Value>) -> Result<Value, InterpreterResult> {
-	super::arity("List.map()", 1, &args, false);
+	super::arity("List.map!()", 1, &args, false);
 
 	let callback = args.get(0).unwrap().clone();
 	let mut list = context.clone().to_vec().borrow().clone();
