@@ -101,6 +101,6 @@ mod tests {
 	fn test_get_all_functions() {
 		let functions = GlobalObject::get_all();
 
-		assert_ne!(functions.is_empty());
+		assert!(!functions.is_empty())
 	}
 }
