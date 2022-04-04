@@ -1,4 +1,4 @@
-use crate::{environment::Value, interpreter::Interpreter};
+use crate::environment::Value;
 
 mod global;
 mod list;
@@ -17,7 +17,7 @@ pub fn arity(name: &str, arity: usize, arguments: &Vec<Value>, multiples_entry: 
 		}
 	} else {
 		if arguments.len() != arity {
-			panic!("{} expects {} arguments, but {} were given", name, arity, arguments.len());
+			panic!("{} expects exactly {} arguments, but {} were given", name, arity, arguments.len());
 		}
 	}
 }
