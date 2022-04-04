@@ -22,9 +22,10 @@ Example: `Lugli.exe run foo.lg`
 # Language features
 * [x] Basic types ➡ String, Number, Boolean, Array, Struct
 * [x] Basic operators ➡ +, -, *, /, ==, !=, >, <, >=, <=, &&, ||, !
-* [x] Basic functions ➡ console print, import files, get object type
-* [x] Basic if statements ➡ if, elif, else, true, false, brackets
-* [x] Basic loops ➡ for, for in, while, loop, break, continue
+* [x] Basic functions ➡ console print, import files, get object type, input, exit...
+* [x] Conditionals statements ➡ if, elif, else, true, false, brackets
+* [x] Loops ➡ for, for in, while, loop, break, continue
+* [x] Fast bindings ➡ i += 1, i -= 1, i++, i-- ...
 ---
 
 # Current embed librarys

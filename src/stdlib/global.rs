@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::io::stdout;
 
 use crate::parser::parse;
 use crate::token::generate;
@@ -19,6 +20,7 @@ impl GlobalObject {
 		global_functions.insert("type?".to_string(), global_type);
 		global_functions.insert("import!".to_string(), global_import);
 		global_functions.insert("exit!".to_string(), global_exit);
+		global_functions.insert("input!".to_string(), global_input);
 
 		global_functions
 	}
@@ -26,9 +28,12 @@ impl GlobalObject {
 
 fn global_println(_: &mut Interpreter, args: Vec<Value>) -> Value {
 	super::arity("println!", 1, &args, true);
-	let arg = args.get(0).unwrap().clone();
 
-	println!("{}", arg.to_string());
+	let arg = args.get(0).unwrap().clone();
+	let mut stdout = stdout();
+
+	stdout.write(format!("{}\n", arg.to_string()).as_bytes()).unwrap();
+	stdout.flush();
 
 	Value::Null
 }
@@ -37,8 +42,10 @@ fn global_print(_: &mut Interpreter, args: Vec<Value>) -> Value {
 	super::arity("print!", 1, &args, true);
 
 	let arg = args.get(0).unwrap().clone();
+	let mut stdout = stdout();
 
-	print!("{}", arg.to_string());
+	stdout.write(arg.to_string().as_bytes()).unwrap();
+	stdout.flush();
 
 	Value::Null
 }
@@ -91,6 +98,16 @@ fn global_import(interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
 
 fn global_exit(_interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
 	std::process::exit(if args.is_empty() { 0 } else { args.get(0).unwrap().clone().to_number() as i32 });
+}
+
+fn global_input(_interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
+	super::arity("input!", 0, &args, false);
+
+	let mut input = String::new();
+
+	std::io::stdin().read_line(&mut input).unwrap();
+
+	Value::String(input)
 }
 
 #[cfg(test)]
