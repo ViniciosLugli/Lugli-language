@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::io::stdout;
+use std::io::{stdout, Write};
 
 use crate::parser::parse;
 use crate::token::generate;
@@ -33,7 +33,7 @@ fn global_println(_: &mut Interpreter, args: Vec<Value>) -> Value {
 	let mut stdout = stdout();
 
 	stdout.write(format!("{}\n", arg.to_string()).as_bytes()).unwrap();
-	stdout.flush();
+	stdout.flush().unwrap();
 
 	Value::Null
 }
@@ -45,7 +45,7 @@ fn global_print(_: &mut Interpreter, args: Vec<Value>) -> Value {
 	let mut stdout = stdout();
 
 	stdout.write(arg.to_string().as_bytes()).unwrap();
-	stdout.flush();
+	stdout.flush().unwrap();
 
 	Value::Null
 }
