@@ -29,6 +29,8 @@ enum Precedence {
 	MinusAssign,
 	MultiplyAssign,
 	DivideAssign,
+	Increment,
+	Decrement,
 	AndOr,
 	LessThanGreaterThan,
 	Equals,
@@ -53,6 +55,8 @@ impl Precedence {
 			Token::MinusAssign => Self::MinusAssign,
 			Token::MultiplyAssign => Self::MultiplyAssign,
 			Token::DivideAssign => Self::DivideAssign,
+			Token::Increment => Self::Increment,
+			Token::Decrement => Self::Decrement,
 			Token::LeftBrace => Self::Statement,
 			Token::Pow => Self::Pow,
 			_ => Self::Lowest,
@@ -311,6 +315,18 @@ impl<'p> Parser<'p> {
 				let right = self.parse_expression(Precedence::Lowest)?;
 
 				Some(Expression::MathAssign(Box::new(left), Op::Divide, Box::new(right)))
+			}
+
+			Token::Increment => {
+				self.read();
+
+				Some(Expression::MathAssign(Box::new(left), Op::Add, Box::new(Expression::Number(1.0))))
+			}
+
+			Token::Decrement => {
+				self.read();
+
+				Some(Expression::MathAssign(Box::new(left), Op::Subtract, Box::new(Expression::Number(1.0))))
 			}
 
 			_ => None,

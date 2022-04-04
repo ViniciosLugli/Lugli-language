@@ -1,0 +1,10 @@
+create i = 0
+create j = 10
+
+i++
+i++
+
+j--
+
+println!(i) # expect 2
+println!(j) # expect 9

@@ -103,6 +103,11 @@ pub enum Token {
 	#[token("/=")]
 	DivideAssign,
 
+	#[token("++")]
+	Increment,
+	#[token("--")]
+	Decrement,
+
 	#[token("+")]
 	Plus,
 	#[token("-")]
@@ -155,7 +160,7 @@ pub enum Token {
 	Eof,
 
 	#[error]
-	#[regex(r"--[^\n]*", logos::skip)]
+	#[regex(r"#[^\n]*", logos::skip)]
 	#[regex(r"[ \t\n\f]+", logos::skip)]
 	Error,
 }

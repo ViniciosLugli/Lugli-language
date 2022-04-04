@@ -1,14 +1,14 @@
--- This is a single-line comment.
+# This is a single-line comment.
 create name = "Testing"
 
-println!(name) -- You can place a comment after a statement like this.
+println!(name) # You can place a comment after a statement like this.
 
 create names = [
-    "Lugli", --This is a comment
+    "Lugli", # This is a comment
     "Testing"
 ]
 
--- Let's do a loop!
+# Let's do a loop!
 for name in names {
     println!(name)
 }
