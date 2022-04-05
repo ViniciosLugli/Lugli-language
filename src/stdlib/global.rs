@@ -11,7 +11,6 @@ impl GlobalObject {
 
 		global_functions.insert("type?".to_string(), functions::global_type);
 		global_functions.insert("import!".to_string(), functions::global_import);
-		global_functions.insert("input!".to_string(), functions::global_input);
 
 		global_functions
 	}
@@ -26,6 +25,7 @@ impl GlobalObject {
 		let mut console_methods = HashMap::<String, Value>::new();
 		console_methods.insert("print!".to_string(), Value::NativeFunction { name: "print!".to_string(), callback: structs::console::print });
 		console_methods.insert("println!".to_string(), Value::NativeFunction { name: "println!".to_string(), callback: structs::console::println });
+		console_methods.insert("input!".to_string(), Value::NativeFunction { name: "input!".to_string(), callback: structs::console::input });
 		global_struct.insert("Console".to_string(), console_methods);
 
 		global_struct
@@ -84,16 +84,6 @@ mod functions {
 
 		return value;
 	}
-
-	pub fn global_input(_interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
-		arity("input!", 0, &args, false);
-
-		let mut input = String::new();
-
-		std::io::stdin().read_line(&mut input).unwrap();
-
-		Value::String(input)
-	}
 }
 
 mod structs {
@@ -135,6 +125,16 @@ mod structs {
 			stdout.flush().unwrap();
 
 			Value::Null
+		}
+
+		pub fn input(_interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
+			arity("input!", 0, &args, false);
+
+			let mut input = String::new();
+
+			std::io::stdin().read_line(&mut input).unwrap();
+
+			Value::String(input)
 		}
 	}
 }
