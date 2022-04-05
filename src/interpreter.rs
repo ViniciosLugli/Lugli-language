@@ -599,6 +599,7 @@ impl<'i> Interpreter<'i> {
 			Value::String(..) => Value::NativeMethod { name: field.clone(), callback: crate::stdlib::StringObject::get(field), context: target },
 			Value::Number(..) => Value::NativeMethod { name: field.clone(), callback: crate::stdlib::NumberObject::get(field), context: target },
 			Value::List(..) => Value::NativeMethod { name: field.clone(), callback: crate::stdlib::ListObject::get(field), context: target },
+			Value::DateTime(..) => Value::NativeMethod { name: field.clone(), callback: crate::stdlib::DateTimeObject::get(field), context: target },
 			Value::Constant(v) => self.get_property(*v, field, target)?,
 			_ => todo!(),
 		})

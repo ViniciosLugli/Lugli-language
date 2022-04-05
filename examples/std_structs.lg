@@ -1,4 +1,9 @@
 Console.println!(Console)
 Console.println!(Application)
+Console.println!(Time)
+
+create current_datetime = Time.datetime?()
+
+Console.println!(current_datetime.strweekday?())
 
 Application.exit!()

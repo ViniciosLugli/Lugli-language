@@ -1,3 +1,4 @@
+use chrono::{DateTime, TimeZone, Utc};
 use hashbrown::HashMap;
 use std::{
 	cell::RefCell,
@@ -51,6 +52,7 @@ pub enum Value {
 	String(String),
 	Null,
 	Bool(bool),
+	DateTime(DateTime<Utc>),
 	Struct { name: String, fields: Vec<Parameter>, methods: Rc<RefCell<HashMap<String, Value>>> },
 	StructInstance { environment: Rc<RefCell<Environment>>, definition: Box<Value> },
 	List(Rc<RefCell<Vec<Value>>>),
@@ -158,6 +160,7 @@ impl Value {
 					"false".to_string()
 				}
 			}
+			Value::DateTime(dt) => dt.to_rfc3339(),
 			Value::Null => "".to_string(),
 			v @ Value::Function { .. } | v @ Value::StructInstance { .. } | v @ Value::List(..) => format!("{:?}", v),
 			Value::Constant(v) => v.to_string(),
@@ -196,12 +199,47 @@ impl Value {
 		}
 	}
 
+	pub fn to_datetime(self) -> DateTime<Utc> {
+		match self {
+			Value::String(s) => {
+				let s = s.trim();
+
+				if s.len() == 0 {
+					return Utc::now();
+				}
+
+				let mut parts = s.split(' ');
+
+				let date = parts.next().unwrap();
+				let time = parts.next().unwrap();
+
+				let date = date.split('-').collect::<Vec<&str>>();
+				let time = time.split(':').collect::<Vec<&str>>();
+
+				let year = date[0].parse::<i32>().unwrap();
+				let month = date[1].parse::<u32>().unwrap();
+				let day = date[2].parse::<u32>().unwrap();
+
+				let hour = time[0].parse::<u32>().unwrap();
+				let minute = time[1].parse::<u32>().unwrap();
+				let second = time[2].parse::<u32>().unwrap();
+
+				Utc.ymd(year, month, day).and_hms(hour, minute, second)
+			}
+			Value::Number(n) => Utc.timestamp(n as i64, 0),
+			Value::Constant(v) => v.to_datetime(),
+			Value::DateTime(dt) => dt,
+			_ => unreachable!(),
+		}
+	}
+
 	pub fn is(self, other: Value) -> bool {
 		match (self, other.clone()) {
 			(Value::String(l), r) => l == r.to_string(),
 			(Value::Number(n), r) => n == r.to_number(),
 			(Value::Bool(true), r) => r.to_bool() == true,
 			(Value::Bool(false), r) => r.to_bool() == false,
+			(Value::DateTime(dt), r) => dt == r.to_datetime(),
 			(Value::Null, Value::Null) => true,
 			(Value::Constant(v), _) => v.is(other),
 			_ => false,
@@ -213,6 +251,7 @@ impl Value {
 			Value::String(..) => "string".into(),
 			Value::Number(..) => "number".into(),
 			Value::Bool(..) => "bool".into(),
+			Value::DateTime(..) => "datetime".into(),
 			Value::Null => "null".into(),
 			Value::Function { .. } | Value::NativeFunction { .. } => "function".into(),
 			Value::StructInstance { definition, .. } => match *definition.clone() {

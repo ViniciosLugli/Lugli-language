@@ -28,6 +28,12 @@ impl GlobalObject {
 		console_methods.insert("input!".to_string(), Value::NativeFunction { name: "input!".to_string(), callback: structs::console::input });
 		global_struct.insert("Console".to_string(), console_methods);
 
+		let mut time_methods = HashMap::<String, Value>::new();
+		time_methods.insert("sleep!".to_string(), Value::NativeFunction { name: "sleep!".to_string(), callback: structs::time::sleep });
+		time_methods.insert("now?".to_string(), Value::NativeFunction { name: "now?".to_string(), callback: structs::time::now });
+		time_methods.insert("datetime?".to_string(), Value::NativeFunction { name: "datetime?".to_string(), callback: structs::time::datetime });
+		global_struct.insert("Time".to_string(), time_methods);
+
 		global_struct
 	}
 }
@@ -135,6 +141,34 @@ mod structs {
 			std::io::stdin().read_line(&mut input).unwrap();
 
 			Value::String(input)
+		}
+	}
+
+	pub mod time {
+		use super::arity;
+		use crate::{environment::Value, interpreter::Interpreter};
+		use chrono::{Datelike, Timelike, Utc};
+
+		pub fn sleep(_interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
+			arity("sleep!", 1, &args, false);
+
+			let arg = args.get(0).unwrap().clone();
+
+			std::thread::sleep(std::time::Duration::from_millis(arg.to_number() as u64));
+
+			Value::Null
+		}
+
+		pub fn now(_interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
+			arity("now?", 0, &args, false);
+
+			Value::Number(Utc::now().timestamp() as f64)
+		}
+
+		pub fn datetime(_interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
+			arity("datetime?", 0, &args, false);
+
+			Value::DateTime(chrono::offset::Utc::now())
 		}
 	}
 }

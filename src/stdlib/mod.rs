@@ -1,10 +1,12 @@
 use crate::environment::Value;
 
+mod datetime;
 mod global;
 mod list;
 mod number;
 mod string;
 
+pub use datetime::DateTimeObject;
 pub use global::GlobalObject;
 pub use list::ListObject;
 pub use number::NumberObject;
