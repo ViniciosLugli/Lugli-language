@@ -17,7 +17,11 @@ pub fn register_global_functions(interpreter: &mut Interpreter) {
 	}
 }
 
-pub fn register_global_structs(interpreter: &mut Interpreter) {}
+pub fn register_global_structs(interpreter: &mut Interpreter) {
+	for (name, methods) in crate::stdlib::GlobalObject::get_all_structs() {
+		interpreter.define_global_struct(name, methods);
+	}
+}
 
 pub fn interpret(ast: Program, path: PathBuf) -> Result<(), InterpreterResult> {
 	let mut interpreter = Interpreter::new(ast.iter(), canonicalize(path).unwrap());
@@ -445,8 +449,6 @@ impl<'i> Interpreter<'i> {
 			Expression::MathAssign(target, op, value) => {
 				let target_expr = self.run_expression(*target.clone())?;
 				let value = self.run_expression(*value)?;
-
-				// println!("{:?} | {:?}", target_expr.clone(), value.clone());
 
 				match target_expr.clone() {
 					Value::Number(n) => {

@@ -161,6 +161,27 @@ impl Value {
 			Value::Null => "".to_string(),
 			v @ Value::Function { .. } | v @ Value::StructInstance { .. } | v @ Value::List(..) => format!("{:?}", v),
 			Value::Constant(v) => v.to_string(),
+			Value::NativeFunction { name, .. } => format!("<{}>", name),
+			Value::Struct { name, methods, fields, .. } => {
+				let name = format!("<struct:{}>", name);
+				let mut fields = fields.into_iter().map(|p| p.name.clone()).collect::<Vec<String>>();
+				let mut methods = methods
+					.borrow()
+					.keys()
+					.into_iter()
+					.map(|p| {
+						let mut p = p.clone();
+						p.push_str("()");
+						p
+					})
+					.collect::<Vec<String>>();
+
+				fields.append(&mut methods);
+
+				let fields = format!("{} {{ {} }}", name, fields.join(", "));
+
+				fields
+			}
 			_ => todo!(),
 		}
 	}
