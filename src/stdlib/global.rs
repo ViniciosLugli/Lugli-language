@@ -1,123 +1,111 @@
+use crate::environment::NativeFunctionCallback;
 use std::collections::HashMap;
-use std::io::{stdout, Write};
-
-use crate::parser::parse;
-use crate::token::generate;
-
-use crate::{
-	environment::{NativeFunctionCallback, Value},
-	interpreter::Interpreter,
-};
 
 pub struct GlobalObject;
 
 impl GlobalObject {
-	pub fn get_all() -> HashMap<String, NativeFunctionCallback> {
+	pub fn get_all_functions() -> HashMap<String, NativeFunctionCallback> {
 		let mut global_functions = HashMap::<String, NativeFunctionCallback>::new();
 
-		global_functions.insert("println!".to_string(), global_println);
-		global_functions.insert("print!".to_string(), global_print);
-		global_functions.insert("type?".to_string(), global_type);
-		global_functions.insert("import!".to_string(), global_import);
-		global_functions.insert("exit!".to_string(), global_exit);
-		global_functions.insert("input!".to_string(), global_input);
+		global_functions.insert("println!".to_string(), functions::global_println);
+		global_functions.insert("print!".to_string(), functions::global_print);
+		global_functions.insert("type?".to_string(), functions::global_type);
+		global_functions.insert("import!".to_string(), functions::global_import);
+		global_functions.insert("exit!".to_string(), functions::global_exit);
+		global_functions.insert("input!".to_string(), functions::global_input);
 
 		global_functions
 	}
 }
 
-fn global_println(_: &mut Interpreter, args: Vec<Value>) -> Value {
-	super::arity("println!", 1, &args, true);
+mod functions {
+	use crate::parser::parse;
+	use crate::token::generate;
+	use std::io::{stdout, Write};
 
-	let arg = args.get(0).unwrap().clone();
-	let mut stdout = stdout();
+	use crate::{environment::Value, interpreter::Interpreter};
 
-	stdout.write(format!("{}\n", arg.to_string()).as_bytes()).unwrap();
-	stdout.flush().unwrap();
+	pub fn global_println(_: &mut Interpreter, args: Vec<Value>) -> Value {
+		super::super::arity("println!", 1, &args, true);
 
-	Value::Null
-}
+		let arg = args.get(0).unwrap().clone();
+		let mut stdout = stdout();
 
-fn global_print(_: &mut Interpreter, args: Vec<Value>) -> Value {
-	super::arity("print!", 1, &args, true);
+		stdout.write(format!("{}\n", arg.to_string()).as_bytes()).unwrap();
+		stdout.flush().unwrap();
 
-	let arg = args.get(0).unwrap().clone();
-	let mut stdout = stdout();
-
-	stdout.write(arg.to_string().as_bytes()).unwrap();
-	stdout.flush().unwrap();
-
-	Value::Null
-}
-
-fn global_type(_: &mut Interpreter, args: Vec<Value>) -> Value {
-	super::arity("type!", 1, &args, false);
-
-	let arg = args.first().unwrap();
-
-	Value::String(arg.clone().typestring())
-}
-
-fn global_import(interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
-	super::arity("import!", 1, &args, false);
-
-	let path = args.first().unwrap().clone().to_string();
-	let directory = interpreter.path().parent().unwrap().to_path_buf();
-
-	let mut module_path = directory.clone();
-	if path.ends_with(".lg") {
-		module_path.push(path);
-	} else {
-		module_path.push(path + ".lg");
+		Value::Null
 	}
 
-	let module_path = module_path.canonicalize().unwrap();
-	let contents = if module_path.exists() {
-		std::fs::read_to_string(&module_path).unwrap()
-	} else {
-		panic!("File {} does not exist.", module_path.to_str().unwrap())
-	};
+	pub fn global_print(_: &mut Interpreter, args: Vec<Value>) -> Value {
+		super::super::arity("print!", 1, &args, true);
 
-	let tokens = generate(&contents);
-	let ast = if let Ok(ast) = parse(tokens) {
-		ast
-	} else {
-		panic!("Failed to parse module {}.", module_path.to_str().unwrap());
-	};
+		let arg = args.get(0).unwrap().clone();
+		let mut stdout = stdout();
 
-	let value = match interpreter.exec(ast) {
-		Ok(_) => Value::Null,
-		Err(e) => {
-			e.print();
-			std::process::exit(1);
+		stdout.write(arg.to_string().as_bytes()).unwrap();
+		stdout.flush().unwrap();
+
+		Value::Null
+	}
+
+	pub fn global_type(_: &mut Interpreter, args: Vec<Value>) -> Value {
+		super::super::arity("type!", 1, &args, false);
+
+		let arg = args.first().unwrap();
+
+		Value::String(arg.clone().typestring())
+	}
+
+	pub fn global_import(interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
+		super::super::arity("import!", 1, &args, false);
+
+		let path = args.first().unwrap().clone().to_string();
+		let directory = interpreter.path().parent().unwrap().to_path_buf();
+
+		let mut module_path = directory.clone();
+		if path.ends_with(".lg") {
+			module_path.push(path);
+		} else {
+			module_path.push(path + ".lg");
 		}
-	};
 
-	return value;
-}
+		let module_path = module_path.canonicalize().unwrap();
+		let contents = if module_path.exists() {
+			std::fs::read_to_string(&module_path).unwrap()
+		} else {
+			panic!("File {} does not exist.", module_path.to_str().unwrap())
+		};
 
-fn global_exit(_interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
-	std::process::exit(if args.is_empty() { 0 } else { args.get(0).unwrap().clone().to_number() as i32 });
-}
+		let tokens = generate(&contents);
+		let ast = if let Ok(ast) = parse(tokens) {
+			ast
+		} else {
+			panic!("Failed to parse module {}.", module_path.to_str().unwrap());
+		};
 
-fn global_input(_interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
-	super::arity("input!", 0, &args, false);
+		let value = match interpreter.exec(ast) {
+			Ok(_) => Value::Null,
+			Err(e) => {
+				e.print();
+				std::process::exit(1);
+			}
+		};
 
-	let mut input = String::new();
+		return value;
+	}
 
-	std::io::stdin().read_line(&mut input).unwrap();
+	pub fn global_exit(_interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
+		std::process::exit(if args.is_empty() { 0 } else { args.get(0).unwrap().clone().to_number() as i32 });
+	}
 
-	Value::String(input)
-}
+	pub fn global_input(_interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
+		super::super::arity("input!", 0, &args, false);
 
-#[cfg(test)]
-mod tests {
-	use super::*;
+		let mut input = String::new();
 
-	#[test]
-	fn test_get_all_functions() {
-		let functions = GlobalObject::get_all();
+		std::io::stdin().read_line(&mut input).unwrap();
 
-		assert!(!functions.is_empty())
+		Value::String(input)
 	}
 }

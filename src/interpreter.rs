@@ -12,20 +12,18 @@ use thiserror::Error;
 use crate::{ast::*, environment::*};
 
 pub fn register_global_functions(interpreter: &mut Interpreter) {
-	for (name, function) in crate::stdlib::GlobalObject::get_all() {
+	for (name, function) in crate::stdlib::GlobalObject::get_all_functions() {
 		interpreter.define_global_function(name, function);
 	}
 }
 
-//pub fn register_global_classes(interpreter: &mut Interpreter) {
-//	interpreter.define_global_class();
-//}
+pub fn register_global_structs(interpreter: &mut Interpreter) {}
 
 pub fn interpret(ast: Program, path: PathBuf) -> Result<(), InterpreterResult> {
 	let mut interpreter = Interpreter::new(ast.iter(), canonicalize(path).unwrap());
 
 	register_global_functions(&mut interpreter);
-	//register_global_classes(&mut interpreter);
+	register_global_structs(&mut interpreter);
 
 	interpreter.run()
 }
@@ -556,12 +554,11 @@ impl<'i> Interpreter<'i> {
 		self.globals.insert(name.clone(), Value::NativeFunction { name, callback });
 	}
 
-	//fn define_global_struct(&mut self, struct_name: impl Into<String>, methods: Vec<Method>) {
-	//	let struct_name = struct_name.into();
-	//	let methods_names: Vec<String> = methods.iter().map(|m| m.name.clone()).collect();
+	fn define_global_struct(&mut self, struct_name: impl Into<String>, methods: HashMap<String, Value>) {
+		let struct_name = struct_name.into();
 
-	//	self.globals.insert(struct_name.clone(), Value::Struct { name: struct_name, fields: methods_names, methods: todo!() });
-	//}
+		self.globals.insert(struct_name.clone(), Value::Struct { name: struct_name, methods: Rc::new(RefCell::new(methods)), fields: vec![] });
+	}
 
 	fn env(&self) -> Ref<Environment> {
 		RefCell::borrow(&self.environment)
