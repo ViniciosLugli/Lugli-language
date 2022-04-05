@@ -4,6 +4,7 @@ create subtraction = 3 - 2
 create division = 3 / 2
 create precedence = 2 + 3 * 2 / 2
 create pow = 2 ** 8
+create module = 9 % 7
 
 println!(sum)
 println!(product)
@@ -11,3 +12,4 @@ println!(subtraction)
 println!(division)
 println!(precedence)
 println!(pow)
+println!(module)

@@ -337,6 +337,7 @@ impl<'i> Interpreter<'i> {
 						l.push_str(r.as_str());
 						Value::String(l)
 					}
+					(Value::Number(l), Op::Modulo, Value::Number(r)) => Value::Number(l % r),
 					(Value::String(l), Op::Equals, Value::String(r)) => Value::Bool(l == r),
 					(Value::Number(l), Op::Equals, Value::Number(r)) => Value::Bool(l == r),
 					(Value::Bool(l), Op::Equals, Value::Bool(r)) => Value::Bool(l == r),

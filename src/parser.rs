@@ -37,6 +37,7 @@ enum Precedence {
 	Sum,
 	Product,
 	Pow,
+	Modulo,
 	Prefix,
 	Call,
 }
@@ -46,8 +47,8 @@ impl Precedence {
 		match token {
 			Token::Asterisk | Token::Slash => Self::Product,
 			Token::Plus | Token::Minus => Self::Sum,
-			Token::LeftParen | Token::Dot | Token::LeftBracket => Self::Call,
-			Token::LessThan | Token::GreaterThan | Token::LessThanOrEquals | Token::GreaterThanOrEquals => Self::LessThanGreaterThan,
+			Token::Percent => Self::Modulo,
+			Token::Pow => Self::Pow,
 			Token::Equals | Token::NotEquals => Self::Equals,
 			Token::And | Token::Or | Token::In | Token::NotIn => Self::AndOr,
 			Token::Assign => Self::Assign,
@@ -57,8 +58,9 @@ impl Precedence {
 			Token::DivideAssign => Self::DivideAssign,
 			Token::Increment => Self::Increment,
 			Token::Decrement => Self::Decrement,
+			Token::LessThan | Token::GreaterThan | Token::LessThanOrEquals | Token::GreaterThanOrEquals => Self::LessThanGreaterThan,
+			Token::LeftParen | Token::Dot | Token::LeftBracket => Self::Call,
 			Token::LeftBrace => Self::Statement,
-			Token::Pow => Self::Pow,
 			_ => Self::Lowest,
 		}
 	}
@@ -268,7 +270,8 @@ impl<'p> Parser<'p> {
 			| Token::Or
 			| Token::Pow
 			| Token::In
-			| Token::NotIn => {
+			| Token::NotIn
+			| Token::Percent => {
 				let token = self.current.clone();
 
 				self.read();
