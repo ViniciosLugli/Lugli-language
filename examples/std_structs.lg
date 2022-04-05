@@ -1,3 +1,4 @@
-println!(Application)
+Console.println!(Console)
+Console.println!(Application)
 
 Application.exit!()

@@ -1,10 +1,7 @@
 use hashbrown::HashMap;
 
 use super::arity;
-use crate::{
-	ast::Expression,
-	environment::{NativeFunctionCallback, Value},
-};
+use crate::environment::{NativeFunctionCallback, Value};
 
 pub struct GlobalObject;
 
@@ -12,8 +9,6 @@ impl GlobalObject {
 	pub fn get_all_functions() -> HashMap<String, NativeFunctionCallback> {
 		let mut global_functions = HashMap::<String, NativeFunctionCallback>::new();
 
-		global_functions.insert("println!".to_string(), functions::global_println);
-		global_functions.insert("print!".to_string(), functions::global_print);
 		global_functions.insert("type?".to_string(), functions::global_type);
 		global_functions.insert("import!".to_string(), functions::global_import);
 		global_functions.insert("input!".to_string(), functions::global_input);
@@ -26,8 +21,12 @@ impl GlobalObject {
 
 		let mut application_methods = HashMap::<String, Value>::new();
 		application_methods.insert("exit!".to_string(), Value::NativeFunction { name: "exit!".to_string(), callback: structs::application::exit });
-
 		global_struct.insert("Application".to_string(), application_methods);
+
+		let mut console_methods = HashMap::<String, Value>::new();
+		console_methods.insert("print!".to_string(), Value::NativeFunction { name: "print!".to_string(), callback: structs::console::print });
+		console_methods.insert("println!".to_string(), Value::NativeFunction { name: "println!".to_string(), callback: structs::console::println });
+		global_struct.insert("Console".to_string(), console_methods);
 
 		global_struct
 	}
@@ -37,33 +36,8 @@ mod functions {
 	use super::arity;
 	use crate::parser::parse;
 	use crate::token::generate;
-	use std::io::{stdout, Write};
 
 	use crate::{environment::Value, interpreter::Interpreter};
-
-	pub fn global_println(_: &mut Interpreter, args: Vec<Value>) -> Value {
-		arity("println!", 1, &args, true);
-
-		let arg = args.get(0).unwrap().clone();
-		let mut stdout = stdout();
-
-		stdout.write(format!("{}\n", arg.to_string()).as_bytes()).unwrap();
-		stdout.flush().unwrap();
-
-		Value::Null
-	}
-
-	pub fn global_print(_: &mut Interpreter, args: Vec<Value>) -> Value {
-		arity("print!", 1, &args, true);
-
-		let arg = args.get(0).unwrap().clone();
-		let mut stdout = stdout();
-
-		stdout.write(arg.to_string().as_bytes()).unwrap();
-		stdout.flush().unwrap();
-
-		Value::Null
-	}
 
 	pub fn global_type(_: &mut Interpreter, args: Vec<Value>) -> Value {
 		arity("type!", 1, &args, false);
@@ -125,15 +99,42 @@ mod functions {
 mod structs {
 	use super::arity;
 	pub mod application {
-		use crate::{
-			environment::{self, Value},
-			interpreter::{Interpreter, InterpreterResult},
-		};
+		use crate::{environment::Value, interpreter::Interpreter};
 
 		pub fn exit(_interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
 			// arity("exit!", 0, &args, false); TODO: Implement arity with optional arguments
 
 			std::process::exit(if args.is_empty() { 0 } else { args.get(0).unwrap().clone().to_number() as i32 });
+		}
+	}
+
+	pub mod console {
+		use super::arity;
+		use crate::{environment::Value, interpreter::Interpreter};
+		use std::io::{stdout, Write};
+
+		pub fn println(_: &mut Interpreter, args: Vec<Value>) -> Value {
+			arity("println!", 1, &args, true);
+
+			let arg = args.get(0).unwrap().clone();
+			let mut stdout = stdout();
+
+			stdout.write(format!("{}\n", arg.to_string()).as_bytes()).unwrap();
+			stdout.flush().unwrap();
+
+			Value::Null
+		}
+
+		pub fn print(_: &mut Interpreter, args: Vec<Value>) -> Value {
+			arity("print!", 1, &args, true);
+
+			let arg = args.get(0).unwrap().clone();
+			let mut stdout = stdout();
+
+			stdout.write(arg.to_string().as_bytes()).unwrap();
+			stdout.flush().unwrap();
+
+			Value::Null
 		}
 	}
 }
