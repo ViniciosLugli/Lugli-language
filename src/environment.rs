@@ -8,12 +8,12 @@ use std::{
 };
 
 use crate::{
-	ast::{Block, CallArguments, Expression, Parameter},
+	ast::{ArgumentValues, Block, Expression, Parameter},
 	interpreter::{Interpreter, InterpreterResult},
 };
 
-pub type NativeFunctionCallback = fn(&mut Interpreter, CallArguments) -> Value;
-pub type NativeMethodCallback = fn(&mut Interpreter, Value, CallArguments) -> Result<Value, InterpreterResult>;
+pub type NativeFunctionCallback = fn(&mut Interpreter, ArgumentValues) -> Value;
+pub type NativeMethodCallback = fn(&mut Interpreter, Value, ArgumentValues) -> Result<Value, InterpreterResult>;
 
 #[derive(Debug, Clone)]
 pub struct Environment {

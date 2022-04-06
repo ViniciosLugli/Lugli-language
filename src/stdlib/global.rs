@@ -95,83 +95,83 @@ impl GlobalObject {
 //	}
 //}
 
-//mod structs {
-//	use super::arity;
-//	pub mod application {
-//		use crate::{environment::Value, interpreter::Interpreter};
+mod structs {
+	use super::arity;
+	//pub mod application {
+	//	use crate::{environment::Value, interpreter::Interpreter};
 
-//		pub fn exit(_interpreter: &mut Interpreter, args: CallArguments) -> Value {
-//			// arity("exit!", 0, &args, false); TODO: Implement arity with optional arguments
+	//	pub fn exit(_interpreter: &mut Interpreter, args: CallArguments) -> Value {
+	//		// arity("exit!", 0, &args, false); TODO: Implement arity with optional arguments
 
-//			std::process::exit(if args.is_empty() { 0 } else { args.get(0).unwrap().clone().to_number() as i32 });
-//		}
-//	}
+	//		std::process::exit(if args.is_empty() { 0 } else { args.get(0).unwrap().clone().to_number() as i32 });
+	//	}
+	//}
 
-//	pub mod console {
-//		use super::arity;
-//		use crate::{environment::Value, interpreter::Interpreter};
-//		use std::io::{stdout, Write};
+	pub mod console {
+		use super::arity;
+		use crate::{ast::ArgumentValues, environment::Value, interpreter::Interpreter};
+		use std::io::{stdout, Write};
 
-//		pub fn println(_: &mut Interpreter, args: CallArguments) -> Value {
-//			arity("println!", 1, &args, true);
+		pub fn println(_: &mut Interpreter, args: ArgumentValues) -> Value {
+			arity("println!", 1, &args, true);
 
-//			let arg = args.get(0).unwrap().clone();
-//			let mut stdout = stdout();
+			let content = args;
+			let mut stdout = stdout();
 
-//			stdout.write(format!("{}\n", arg.to_string()).as_bytes()).unwrap();
-//			stdout.flush().unwrap();
+			// stdout.write(format!("{}\n", content).as_bytes()).unwrap();
+			stdout.flush().unwrap();
 
-//			Value::Null
-//		}
+			Value::Null
+		}
 
-//		pub fn print(_: &mut Interpreter, args: CallArguments) -> Value {
-//			arity("print!", 1, &args, true);
+		//pub fn print(_: &mut Interpreter, args: CallArguments) -> Value {
+		//	arity("print!", 1, &args, true);
 
-//			let arg = args.get(0).unwrap().clone();
-//			let mut stdout = stdout();
+		//	let arg = args.get(0).unwrap().clone();
+		//	let mut stdout = stdout();
 
-//			stdout.write(arg.to_string().as_bytes()).unwrap();
-//			stdout.flush().unwrap();
+		//	stdout.write(arg.to_string().as_bytes()).unwrap();
+		//	stdout.flush().unwrap();
 
-//			Value::Null
-//		}
+		//	Value::Null
+		//}
 
-//		pub fn input(_interpreter: &mut Interpreter, args: CallArguments) -> Value {
-//			arity("input!", 0, &args, false);
+		//pub fn input(_interpreter: &mut Interpreter, args: CallArguments) -> Value {
+		//	arity("input!", 0, &args, false);
 
-//			let mut input = String::new();
+		//	let mut input = String::new();
 
-//			std::io::stdin().read_line(&mut input).unwrap();
+		//	std::io::stdin().read_line(&mut input).unwrap();
 
-//			Value::String(input)
-//		}
-//	}
+		//	Value::String(input)
+		//}
+	}
 
-//	pub mod time {
-//		use super::arity;
-//		use crate::{environment::Value, interpreter::Interpreter};
-//		use chrono::Utc;
+	//pub mod time {
+	//	use super::arity;
+	//	use crate::{environment::Value, interpreter::Interpreter};
+	//	use chrono::Utc;
 
-//		pub fn sleep(_interpreter: &mut Interpreter, args: CallArguments) -> Value {
-//			arity("sleep!", 1, &args, false);
+	//	pub fn sleep(_interpreter: &mut Interpreter, args: CallArguments) -> Value {
+	//		arity("sleep!", 1, &args, false);
 
-//			let arg = args.get(0).unwrap().clone();
+	//		let arg = args.get(0).unwrap().clone();
 
-//			std::thread::sleep(std::time::Duration::from_millis(arg.to_number() as u64));
+	//		std::thread::sleep(std::time::Duration::from_millis(arg.to_number() as u64));
 
-//			Value::Null
-//		}
+	//		Value::Null
+	//	}
 
-//		pub fn now(_interpreter: &mut Interpreter, args: CallArguments) -> Value {
-//			arity("now?", 0, &args, false);
+	//	pub fn now(_interpreter: &mut Interpreter, args: CallArguments) -> Value {
+	//		arity("now?", 0, &args, false);
 
-//			Value::Number(Utc::now().timestamp() as f64)
-//		}
+	//		Value::Number(Utc::now().timestamp() as f64)
+	//	}
 
-//		pub fn datetime(_interpreter: &mut Interpreter, args: CallArguments) -> Value {
-//			arity("datetime?", 0, &args, false);
+	//	pub fn datetime(_interpreter: &mut Interpreter, args: CallArguments) -> Value {
+	//		arity("datetime?", 0, &args, false);
 
-//			Value::DateTime(chrono::offset::Utc::now())
-//		}
-//	}
-//}
+	//		Value::DateTime(chrono::offset::Utc::now())
+	//	}
+	//}
+}

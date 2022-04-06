@@ -196,7 +196,6 @@ impl<'p> Parser<'p> {
 		let mut args: CallArguments = CallArguments::new();
 
 		while !self.current_is(Token::RightParen) {
-			let idx = args.len() as u8;
 			let cursor: Option<String> = match self.current.clone() {
 				Token::Identifier(s) => {
 					self.expect_identifier_and_read()?;
@@ -210,11 +209,11 @@ impl<'p> Parser<'p> {
 			match cursor {
 				Some(name) => {
 					self.expect_token_and_read(Token::Assign)?;
-					args.add_argument(Argument::new(Some(name), idx, self.parse_expression(Precedence::Lowest)?));
+					args.add_argument(Argument::new(Some(name), self.parse_expression(Precedence::Lowest)?));
 				}
 
 				None => {
-					args.add_argument(Argument::new(None, idx, self.parse_expression(Precedence::Lowest)?));
+					args.add_argument(Argument::new(None, self.parse_expression(Precedence::Lowest)?));
 				}
 			}
 
@@ -238,7 +237,7 @@ impl<'p> Parser<'p> {
 				if !self.current_is(Token::LeftParen) {
 					Some(Expression::GetProperty(Box::new(left), field))
 				} else {
-					let mut args = self.parse_arguments()?;
+					let args = self.parse_arguments()?;
 					Some(Expression::MethodCall(Box::new(left), field, args))
 				}
 			}
@@ -280,9 +279,7 @@ impl<'p> Parser<'p> {
 				Some(Expression::Struct(left.boxed(), fields))
 			}
 			Token::LeftParen => {
-				self.expect_token_and_read(Token::LeftParen)?;
-
-				let mut args = self.parse_arguments()?;
+				let args = self.parse_arguments()?;
 
 				Some(Expression::Call(Box::new(left), args))
 			}

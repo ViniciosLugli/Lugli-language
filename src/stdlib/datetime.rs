@@ -1,7 +1,7 @@
 use chrono::{Datelike, Timelike};
 
 use crate::{
-	ast::CallArguments,
+	ast::ArgumentValues,
 	environment::{NativeMethodCallback, Value},
 	interpreter::{Interpreter, InterpreterResult},
 };
@@ -39,17 +39,17 @@ impl DateTimeObject {
 	}
 }
 
-fn datetime_format(_: &mut Interpreter, context: Value, args: CallArguments) -> Result<Value, InterpreterResult> {
+fn datetime_format(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
 	super::arity("DateTime.format!", 1, &args, false);
 
 	let datetime = context.to_datetime();
-	// FIX: Change to new CallArguments
+	// FIX: Change to new ArgumentValues
 	// let format = args.get(0).unwrap().clone().to_string();
 	let format = ""; // Temp
 	Ok(Value::String(datetime.format(&format).to_string()))
 }
 
-fn datetime_hour(_: &mut Interpreter, context: Value, args: CallArguments) -> Result<Value, InterpreterResult> {
+fn datetime_hour(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
 	super::arity("DateTime.hour?", 0, &args, false);
 
 	let datetime = context.to_datetime();
@@ -57,7 +57,7 @@ fn datetime_hour(_: &mut Interpreter, context: Value, args: CallArguments) -> Re
 	Ok(Value::Number(datetime.hour() as f64))
 }
 
-fn datetime_minute(_: &mut Interpreter, context: Value, args: CallArguments) -> Result<Value, InterpreterResult> {
+fn datetime_minute(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
 	super::arity("DateTime.minute?", 0, &args, false);
 
 	let datetime = context.to_datetime();
@@ -65,7 +65,7 @@ fn datetime_minute(_: &mut Interpreter, context: Value, args: CallArguments) -> 
 	Ok(Value::Number(datetime.minute() as f64))
 }
 
-fn datetime_seconds(_: &mut Interpreter, context: Value, args: CallArguments) -> Result<Value, InterpreterResult> {
+fn datetime_seconds(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
 	super::arity("DateTime.seconds", 0, &args, false);
 
 	let datetime = context.to_datetime();
@@ -73,7 +73,7 @@ fn datetime_seconds(_: &mut Interpreter, context: Value, args: CallArguments) ->
 	Ok(Value::Number(datetime.second() as f64))
 }
 
-fn datetime_nanosecond(_: &mut Interpreter, context: Value, args: CallArguments) -> Result<Value, InterpreterResult> {
+fn datetime_nanosecond(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
 	super::arity("DateTime.nanosecond?", 0, &args, false);
 
 	let datetime = context.to_datetime();
@@ -81,7 +81,7 @@ fn datetime_nanosecond(_: &mut Interpreter, context: Value, args: CallArguments)
 	Ok(Value::Number(datetime.nanosecond() as f64))
 }
 
-fn datetime_year(_: &mut Interpreter, context: Value, args: CallArguments) -> Result<Value, InterpreterResult> {
+fn datetime_year(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
 	super::arity("DateTime.year?", 0, &args, false);
 
 	let datetime = context.to_datetime();
@@ -89,7 +89,7 @@ fn datetime_year(_: &mut Interpreter, context: Value, args: CallArguments) -> Re
 	Ok(Value::Number(datetime.year() as f64))
 }
 
-fn datetime_month(_: &mut Interpreter, context: Value, args: CallArguments) -> Result<Value, InterpreterResult> {
+fn datetime_month(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
 	super::arity("DateTime.month?", 0, &args, false);
 
 	let datetime = context.to_datetime();
@@ -97,7 +97,7 @@ fn datetime_month(_: &mut Interpreter, context: Value, args: CallArguments) -> R
 	Ok(Value::Number(datetime.month() as f64))
 }
 
-fn datetime_day(_: &mut Interpreter, context: Value, args: CallArguments) -> Result<Value, InterpreterResult> {
+fn datetime_day(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
 	super::arity("DateTime.day?", 0, &args, false);
 
 	let datetime = context.to_datetime();
@@ -105,7 +105,7 @@ fn datetime_day(_: &mut Interpreter, context: Value, args: CallArguments) -> Res
 	Ok(Value::Number(datetime.day() as f64))
 }
 
-fn datetime_weekday(_: &mut Interpreter, context: Value, args: CallArguments) -> Result<Value, InterpreterResult> {
+fn datetime_weekday(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
 	super::arity("DateTime.weekday?", 0, &args, false);
 
 	let datetime = context.to_datetime();
@@ -113,7 +113,7 @@ fn datetime_weekday(_: &mut Interpreter, context: Value, args: CallArguments) ->
 	Ok(Value::Number(datetime.weekday().num_days_from_sunday() as f64))
 }
 
-fn datetime_strweekday(_: &mut Interpreter, context: Value, args: CallArguments) -> Result<Value, InterpreterResult> {
+fn datetime_strweekday(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
 	super::arity("DateTime.strWeekday?", 0, &args, false);
 
 	let datetime = context.to_datetime();

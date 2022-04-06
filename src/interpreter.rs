@@ -228,7 +228,7 @@ impl<'i> Interpreter<'i> {
 		})
 	}
 
-	pub fn call(&mut self, callable: Value, arguments: CallArguments) -> Result<Value, InterpreterResult> {
+	pub fn call(&mut self, callable: Value, arguments: ArgumentValues) -> Result<Value, InterpreterResult> {
 		Ok(match callable {
 			Value::Constant(v) => self.call(*v, arguments)?,
 			Value::NativeFunction { callback, .. } => callback(self, arguments),
@@ -435,7 +435,13 @@ impl<'i> Interpreter<'i> {
 			Expression::Call(callable, arguments) => {
 				let callable = self.run_expression(*callable)?;
 
-				self.call(callable, arguments)?
+				let mut arguments_value = ArgumentValues::new();
+
+				for argument in arguments.get_arguments().clone() {
+					arguments_value.push(ArgumentValued::new(argument.get_name().clone(), self.run_expression(argument.get_expression().clone())?));
+				}
+
+				self.call(callable, arguments_value)?
 			}
 			Expression::Prefix(op, right) => {
 				let right = self.run_expression(*right)?;

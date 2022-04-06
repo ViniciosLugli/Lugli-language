@@ -1,5 +1,5 @@
 use crate::{
-	ast::CallArguments,
+	ast::ArgumentValues,
 	environment::{NativeMethodCallback, Value},
 	interpreter::{Interpreter, InterpreterResult},
 };
@@ -19,7 +19,7 @@ impl NumberObject {
 	}
 }
 
-fn number_is_integer(_: &mut Interpreter, context: Value, args: CallArguments) -> Result<Value, InterpreterResult> {
+fn number_is_integer(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
 	super::arity("Number.integer?", 0, &args, false);
 
 	let number = context.to_number();
@@ -27,7 +27,7 @@ fn number_is_integer(_: &mut Interpreter, context: Value, args: CallArguments) -
 	Ok(Value::Bool(number == number.trunc()))
 }
 
-fn number_is_float(_: &mut Interpreter, context: Value, args: CallArguments) -> Result<Value, InterpreterResult> {
+fn number_is_float(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
 	super::arity("Number.float?", 0, &args, false);
 
 	let number = context.to_number();
@@ -35,9 +35,9 @@ fn number_is_float(_: &mut Interpreter, context: Value, args: CallArguments) -> 
 	Ok(Value::Bool(number != number.trunc()))
 }
 
-fn round_number(_: &mut Interpreter, context: Value, args: CallArguments) -> Result<Value, InterpreterResult> {
+fn round_number(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
 	let number = context.to_number();
-	// Fix: Change to new CallArguments
+	// Fix: Change to new ArgumentValues
 	//let precision = if args.is_empty() { 0 } else { args.get(0).unwrap().clone().to_number() as usize };
 	let precision = 0; // Temp
 	if precision == 0 {
@@ -49,7 +49,7 @@ fn round_number(_: &mut Interpreter, context: Value, args: CallArguments) -> Res
 	Ok(Value::Number(rounded))
 }
 
-fn number_is_even(_: &mut Interpreter, context: Value, args: CallArguments) -> Result<Value, InterpreterResult> {
+fn number_is_even(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
 	super::arity("Number.even?", 0, &args, false);
 
 	let number = context.to_number();
@@ -58,7 +58,7 @@ fn number_is_even(_: &mut Interpreter, context: Value, args: CallArguments) -> R
 	Ok(Value::Bool(number % 2.0 == 0.0))
 }
 
-fn number_is_odd(_: &mut Interpreter, context: Value, args: CallArguments) -> Result<Value, InterpreterResult> {
+fn number_is_odd(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
 	super::arity("Number.odd?", 0, &args, false);
 
 	let number = context.to_number();

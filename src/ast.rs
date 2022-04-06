@@ -1,6 +1,6 @@
 use hashbrown::HashMap;
 
-use crate::token::Token;
+use crate::{environment::Value, token::Token};
 
 pub type Program = Vec<Statement>;
 pub type Block = Vec<Statement>;
@@ -29,20 +29,78 @@ pub enum Statement {
 	Expression { expression: Expression },
 }
 
+#[derive(Debug, Clone)]
+pub struct ArgumentValued {
+	pub name: Option<Identifier>,
+	pub value: Value,
+}
+
+#[derive(Debug, Clone)]
+pub struct ArgumentValues {
+	params_values: Vec<ArgumentValued>,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Parameter {
 	pub name: String,
 }
 #[derive(Debug, Clone, PartialEq)]
 pub struct Argument {
-	pub name: Option<String>,
-	pub number: Numerator,
-	pub value: Expression,
+	name: Option<String>,
+	expression: Expression,
+}
+
+impl ArgumentValued {
+	pub fn new(name: Option<String>, value: Value) -> Self {
+		Self { name, value }
+	}
+}
+
+impl ArgumentValues {
+	pub fn new() -> ArgumentValues {
+		ArgumentValues { params_values: Vec::new() }
+	}
+
+	pub fn get_from_name(&self, name: Identifier) -> Option<Value> {
+		for param in &self.params_values {
+			if param.name == Some(name.clone()) {
+				return Some(param.value.clone());
+			}
+		}
+		None
+	}
+
+	pub fn get_from_index(&self, index: usize) -> Option<Value> {
+		if index < self.params_values.len() {
+			return Some(self.params_values[index].value.clone());
+		}
+		None
+	}
+
+	pub fn push(&mut self, argument_valued: ArgumentValued) {
+		self.params_values.push(argument_valued);
+	}
+
+	pub fn get_raw(&self) -> Vec<ArgumentValued> {
+		self.params_values.clone()
+	}
+
+	pub fn len(&self) -> usize {
+		self.params_values.len()
+	}
 }
 
 impl Argument {
-	pub fn new(name: Option<String>, number: Numerator, value: Expression) -> Self {
-		Self { name, number, value }
+	pub fn new(name: Option<String>, expression: Expression) -> Self {
+		Self { name, expression }
+	}
+
+	pub fn get_expression(&self) -> &Expression {
+		&self.expression
+	}
+
+	pub fn get_name(&self) -> &Option<String> {
+		&self.name
 	}
 }
 
@@ -60,16 +118,8 @@ impl CallArguments {
 		self.arguments.push(argument);
 	}
 
-	pub fn get_from_index(&self, number: Numerator) -> Option<&Argument> {
-		self.arguments.iter().find(|arg| arg.number == number)
-	}
-
-	pub fn get_from_name(&self, name: String) -> Option<&Argument> {
-		self.arguments.iter().find(|arg| arg.name == Some(name))
-	}
-
-	pub fn len(&self) -> usize {
-		self.arguments.len()
+	pub fn get_arguments(&self) -> &Vec<Argument> {
+		&self.arguments
 	}
 }
 
