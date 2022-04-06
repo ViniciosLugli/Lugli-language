@@ -1,5 +1,3 @@
-use std::hash::Hash;
-
 use hashbrown::HashMap;
 
 use crate::token::Token;
@@ -8,11 +6,6 @@ pub type Program = Vec<Statement>;
 pub type Block = Vec<Statement>;
 pub type Identifier = String;
 pub type Numerator = u8;
-
-//pub struct Method {
-//	name: String,
-//	callback: NativeFunctionCallback,
-//}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ConditionBlock {
@@ -40,6 +33,45 @@ pub enum Statement {
 pub struct Parameter {
 	pub name: String,
 }
+#[derive(Debug, Clone, PartialEq)]
+pub struct Argument {
+	pub name: Option<String>,
+	pub number: Numerator,
+	pub value: Expression,
+}
+
+impl Argument {
+	pub fn new(name: Option<String>, number: Numerator, value: Expression) -> Self {
+		Self { name, number, value }
+	}
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct CallArguments {
+	arguments: Vec<Argument>,
+}
+
+impl CallArguments {
+	pub fn new() -> Self {
+		Self { arguments: Vec::new() }
+	}
+
+	pub fn add_argument(&mut self, argument: Argument) {
+		self.arguments.push(argument);
+	}
+
+	pub fn get_from_index(&self, number: Numerator) -> Option<&Argument> {
+		self.arguments.iter().find(|arg| arg.number == number)
+	}
+
+	pub fn get_from_name(&self, name: String) -> Option<&Argument> {
+		self.arguments.iter().find(|arg| arg.name == Some(name))
+	}
+
+	pub fn len(&self) -> usize {
+		self.arguments.len()
+	}
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
@@ -52,10 +84,10 @@ pub enum Expression {
 	MathAssign(Box<Expression>, Op, Box<Expression>),
 	Infix(Box<Expression>, Op, Box<Expression>),
 	Prefix(Op, Box<Expression>),
-	Call(Box<Expression>, Vec<Expression>),
+	Call(Box<Expression>, CallArguments),
 	Struct(Box<Expression>, HashMap<Identifier, Expression>),
 	Closure(Vec<Parameter>, Vec<Statement>),
-	MethodCall(Box<Expression>, Identifier, Vec<HashMap<Result<Identifier, Numerator>, Expression>>),
+	MethodCall(Box<Expression>, Identifier, CallArguments),
 	GetProperty(Box<Expression>, Identifier),
 	Index(Box<Expression>, Option<Box<Expression>>),
 	List(Vec<Expression>),

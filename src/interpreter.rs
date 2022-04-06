@@ -228,7 +228,7 @@ impl<'i> Interpreter<'i> {
 		})
 	}
 
-	pub fn call(&mut self, callable: Value, arguments: Vec<Value>) -> Result<Value, InterpreterResult> {
+	pub fn call(&mut self, callable: Value, arguments: CallArguments) -> Result<Value, InterpreterResult> {
 		Ok(match callable {
 			Value::Constant(v) => self.call(*v, arguments)?,
 			Value::NativeFunction { callback, .. } => callback(self, arguments),
@@ -251,9 +251,10 @@ impl<'i> Interpreter<'i> {
 					new_environment.borrow_mut().set("this", context);
 				}
 
-				for (Parameter { name, .. }, value) in params.into_iter().filter(|p| p.name != "this").zip(arguments) {
-					new_environment.borrow_mut().set(name, value);
-				}
+				// FIX: update to new arguments struct
+				//for (Parameter { name, .. }, value) in params.into_iter().filter(|p| p.name != "this").zip(arguments) {
+				//	new_environment.borrow_mut().set(name, value);
+				//}
 
 				self.environment = new_environment;
 
@@ -433,13 +434,8 @@ impl<'i> Interpreter<'i> {
 			}
 			Expression::Call(callable, arguments) => {
 				let callable = self.run_expression(*callable)?;
-				let mut argument_values: Vec<Value> = Vec::new();
 
-				for argument in arguments.into_iter() {
-					argument_values.push(self.run_expression(argument)?);
-				}
-
-				self.call(callable, argument_values)?
+				self.call(callable, arguments)?
 			}
 			Expression::Prefix(op, right) => {
 				let right = self.run_expression(*right)?;

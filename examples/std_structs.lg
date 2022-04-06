@@ -2,7 +2,7 @@
 #Console.println!(Application)
 #Console.println!(Time)
 
-Time.sleep(time_params = 1, 2)
+Console.println!("finalmente")
 
 #create current_datetime = Time.datetime?()
 #create teste = current_datetime.seconds

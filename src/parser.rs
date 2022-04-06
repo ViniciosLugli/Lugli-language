@@ -1,3 +1,4 @@
+use clap::Arg;
 use colored::*;
 use hashbrown::HashMap;
 use std::slice::Iter;
@@ -189,54 +190,56 @@ impl<'p> Parser<'p> {
 		Ok(left)
 	}
 
+	fn parse_arguments(&mut self) -> Result<CallArguments, ParseError> {
+		self.expect_token_and_read(Token::LeftParen)?;
+
+		let mut args: CallArguments = CallArguments::new();
+
+		while !self.current_is(Token::RightParen) {
+			let idx = args.len() as u8;
+			let cursor: Option<String> = match self.current.clone() {
+				Token::Identifier(s) => {
+					self.expect_identifier_and_read()?;
+					dbg!(&s.to_string());
+					Some(s.into())
+				}
+
+				_ => None,
+			};
+
+			match cursor {
+				Some(name) => {
+					self.expect_token_and_read(Token::Assign)?;
+					args.add_argument(Argument::new(Some(name), idx, self.parse_expression(Precedence::Lowest)?));
+				}
+
+				None => {
+					args.add_argument(Argument::new(None, idx, self.parse_expression(Precedence::Lowest)?));
+				}
+			}
+
+			if self.current_is(Token::Comma) {
+				self.expect_token_and_read(Token::Comma)?;
+			}
+		}
+
+		self.expect_token_and_read(Token::RightParen)?;
+
+		println!("{:?}", args);
+		Ok(args)
+	}
+
 	fn parse_postfix_expression(&mut self, left: Expression) -> Result<Option<Expression>, ParseError> {
 		Ok(match self.current {
 			Token::Dot => {
 				self.expect_token_and_read(Token::Dot)?;
 
 				let field = self.expect_identifier_and_read()?.into();
-				// check if field is a method
-				if self.current_is(Token::LeftParen) {
-					self.expect_token_and_read(Token::LeftParen)?;
-
-					let mut params: Vec<HashMap<Result<Identifier, Numerator>, Expression>> = Vec::new();
-
-					while !self.current_is(Token::RightParen) {
-						let mut param: HashMap<Result<Identifier, Numerator>, Expression> = HashMap::new();
-
-						let cursor: Result<Identifier, Numerator> = match self.current.clone() {
-							Token::Identifier(s) => {
-								self.expect_identifier_and_read()?;
-								dbg!(&s.to_string());
-								Ok(s.into())
-							}
-
-							_ => Err(params.len() as u8),
-						};
-						match cursor {
-							Ok(name) => {
-								self.expect_token_and_read(Token::Assign)?;
-								param.insert(Ok(name), self.parse_expression(Precedence::Lowest)?);
-							}
-
-							Err(number) => {
-								param.insert(Err(number), self.parse_expression(Precedence::Lowest)?);
-							}
-						}
-
-						if self.current_is(Token::Comma) {
-							self.expect_token_and_read(Token::Comma)?;
-						}
-
-						params.push(param);
-					}
-
-					self.expect_token_and_read(Token::RightParen)?;
-
-					println!("{:?}", params);
-					Some(Expression::MethodCall(Box::new(left), field, params))
-				} else {
+				if !self.current_is(Token::LeftParen) {
 					Some(Expression::GetProperty(Box::new(left), field))
+				} else {
+					let mut args = self.parse_arguments()?;
+					Some(Expression::MethodCall(Box::new(left), field, args))
 				}
 			}
 
@@ -279,17 +282,7 @@ impl<'p> Parser<'p> {
 			Token::LeftParen => {
 				self.expect_token_and_read(Token::LeftParen)?;
 
-				let mut args = Vec::new();
-
-				while !self.current_is(Token::RightParen) {
-					args.push(self.parse_expression(Precedence::Lowest)?);
-
-					if self.current_is(Token::Comma) {
-						self.read();
-					}
-				}
-
-				self.expect_token_and_read(Token::RightParen)?;
+				let mut args = self.parse_arguments()?;
 
 				Some(Expression::Call(Box::new(left), args))
 			}
