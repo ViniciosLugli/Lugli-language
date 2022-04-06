@@ -1,9 +1,12 @@
-Console.println!(Console)
-Console.println!(Application)
-Console.println!(Time)
+#Console.println!(Console)
+#Console.println!(Application)
+#Console.println!(Time)
 
-create current_datetime = Time.datetime?()
+Time.sleep(time_params = 1, 2)
 
-Console.println!(current_datetime.strweekday?())
+#create current_datetime = Time.datetime?()
+#create teste = current_datetime.seconds
 
-Application.exit!()
+#Console.println!(teste)
+
+#Application.exit!()

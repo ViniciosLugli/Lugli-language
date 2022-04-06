@@ -1,3 +1,5 @@
+use std::hash::Hash;
+
 use hashbrown::HashMap;
 
 use crate::token::Token;
@@ -5,6 +7,7 @@ use crate::token::Token;
 pub type Program = Vec<Statement>;
 pub type Block = Vec<Statement>;
 pub type Identifier = String;
+pub type Numerator = u8;
 
 //pub struct Method {
 //	name: String,
@@ -52,7 +55,8 @@ pub enum Expression {
 	Call(Box<Expression>, Vec<Expression>),
 	Struct(Box<Expression>, HashMap<Identifier, Expression>),
 	Closure(Vec<Parameter>, Vec<Statement>),
-	Get(Box<Expression>, Identifier),
+	MethodCall(Box<Expression>, Identifier, Vec<HashMap<Result<Identifier, Numerator>, Expression>>),
+	GetProperty(Box<Expression>, Identifier),
 	Index(Box<Expression>, Option<Box<Expression>>),
 	List(Vec<Expression>),
 }

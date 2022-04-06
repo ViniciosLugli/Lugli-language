@@ -8,18 +8,32 @@ use crate::{
 pub struct DateTimeObject;
 
 impl DateTimeObject {
-	pub fn get(name: String) -> NativeMethodCallback {
+	pub fn get_method(name: String) -> NativeMethodCallback {
 		match name.as_str() {
 			"format!" => datetime_format,
 			"hour?" => datetime_hour,
 			"minute?" => datetime_minute,
-			"second?" => datetime_second,
-			"year?" => datetime_year,
-			"month?" => datetime_month,
+			"nanosecond?" => datetime_nanosecond,
 			"day?" => datetime_day,
 			"weekday?" => datetime_weekday,
 			"strweekday?" => datetime_strweekday,
+			"month?" => datetime_month,
+			"year?" => datetime_year,
 			_ => panic!("Undefined method: `{}` for DateTime object", name),
+		}
+	}
+
+	pub fn get_property(name: String) -> NativeMethodCallback {
+		match name.as_str() {
+			"seconds" => datetime_seconds,
+			_ => panic!("Undefined property: `{}` for DateTime object", name),
+		}
+	}
+
+	pub fn set_property(name: String) -> NativeMethodCallback {
+		match name.as_str() {
+			"seconds" => datetime_seconds,
+			_ => panic!("Undefined property: `{}` for DateTime object", name),
 		}
 	}
 }
@@ -49,8 +63,8 @@ fn datetime_minute(_: &mut Interpreter, context: Value, args: Vec<Value>) -> Res
 	Ok(Value::Number(datetime.minute() as f64))
 }
 
-fn datetime_second(_: &mut Interpreter, context: Value, args: Vec<Value>) -> Result<Value, InterpreterResult> {
-	super::arity("DateTime.second?", 0, &args, false);
+fn datetime_seconds(_: &mut Interpreter, context: Value, args: Vec<Value>) -> Result<Value, InterpreterResult> {
+	super::arity("DateTime.seconds", 0, &args, false);
 
 	let datetime = context.to_datetime();
 

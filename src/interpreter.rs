@@ -113,7 +113,7 @@ impl<'i> Interpreter<'i> {
 				self.globals.insert(name.clone(), Value::Function { name, params, body, environment: None, context: None });
 			}
 			Statement::StructDeclaration { name, fields } => {
-				self.globals.insert(name.clone(), Value::Struct { name, fields, methods: Rc::new(RefCell::new(HashMap::new())) });
+				self.globals.insert(name.clone(), Value::Struct { name, fields, methods: Rc::new(RefCell::new(HashMap::new())), propreties: None });
 			}
 			Statement::For { iterable, value, index, then } => {
 				let iterable = self.run_expression(iterable)?;
@@ -310,7 +310,12 @@ impl<'i> Interpreter<'i> {
 					_ => unreachable!(),
 				}
 			}
-			Expression::Get(target, field) => {
+			Expression::MethodCall(target, field, arguments) => {
+				let instance = self.run_expression(*target.clone())?;
+
+				self.get_property(instance, field, *target)?
+			}
+			Expression::GetProperty(target, field) => {
 				let instance = self.run_expression(*target.clone())?;
 
 				self.get_property(instance, field, *target)?
@@ -384,7 +389,7 @@ impl<'i> Interpreter<'i> {
 				let definition = self.run_expression(*definition)?;
 
 				let (name, field_definitions, methods) = match definition.clone() {
-					Value::Struct { name, fields, methods } => (name, fields, methods),
+					Value::Struct { name, fields, methods, propreties } => (name, fields, methods),
 					_ => unreachable!(),
 				};
 
@@ -520,7 +525,7 @@ impl<'i> Interpreter<'i> {
 
 						assign_to_list(self, instance, index, value.clone())?;
 					}
-					Expression::Get(instance, field) => {
+					Expression::MethodCall(instance, field, arguments) => {
 						let instance = self.run_expression(*instance)?;
 
 						assign_to_instance(instance, field, value.clone())?;
@@ -559,7 +564,10 @@ impl<'i> Interpreter<'i> {
 	fn define_global_struct(&mut self, struct_name: impl Into<String>, methods: HashMap<String, Value>) {
 		let struct_name = struct_name.into();
 
-		self.globals.insert(struct_name.clone(), Value::Struct { name: struct_name, methods: Rc::new(RefCell::new(methods)), fields: vec![] });
+		self.globals.insert(
+			struct_name.clone(),
+			Value::Struct { name: struct_name, methods: Rc::new(RefCell::new(methods)), fields: vec![], propreties: None },
+		);
 	}
 
 	fn env(&self) -> Ref<Environment> {
@@ -599,7 +607,10 @@ impl<'i> Interpreter<'i> {
 			Value::String(..) => Value::NativeMethod { name: field.clone(), callback: crate::stdlib::StringObject::get(field), context: target },
 			Value::Number(..) => Value::NativeMethod { name: field.clone(), callback: crate::stdlib::NumberObject::get(field), context: target },
 			Value::List(..) => Value::NativeMethod { name: field.clone(), callback: crate::stdlib::ListObject::get(field), context: target },
-			Value::DateTime(..) => Value::NativeMethod { name: field.clone(), callback: crate::stdlib::DateTimeObject::get(field), context: target },
+			Value::DateTime(..) => {
+				println!("{:?}", &field);
+				Value::NativeMethod { name: field.clone(), callback: crate::stdlib::DateTimeObject::get_method(field), context: target }
+			}
 			Value::Constant(v) => self.get_property(*v, field, target)?,
 			_ => todo!(),
 		})

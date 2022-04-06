@@ -177,6 +177,7 @@ impl<'p> Parser<'p> {
 
 		while !self.current_is(Token::Eof) && precedence < Precedence::token(self.current.clone()) {
 			if let Some(expression) = self.parse_postfix_expression(left.clone())? {
+				dbg!(&expression);
 				left = expression;
 			} else if let Some(expression) = self.parse_infix_expression(left.clone())? {
 				left = expression
@@ -194,9 +195,51 @@ impl<'p> Parser<'p> {
 				self.expect_token_and_read(Token::Dot)?;
 
 				let field = self.expect_identifier_and_read()?.into();
+				// check if field is a method
+				if self.current_is(Token::LeftParen) {
+					self.expect_token_and_read(Token::LeftParen)?;
 
-				Some(Expression::Get(Box::new(left), field))
+					let mut params: Vec<HashMap<Result<Identifier, Numerator>, Expression>> = Vec::new();
+
+					while !self.current_is(Token::RightParen) {
+						let mut param: HashMap<Result<Identifier, Numerator>, Expression> = HashMap::new();
+
+						let cursor: Result<Identifier, Numerator> = match self.current.clone() {
+							Token::Identifier(s) => {
+								self.expect_identifier_and_read()?;
+								dbg!(&s.to_string());
+								Ok(s.into())
+							}
+
+							_ => Err(params.len() as u8),
+						};
+						match cursor {
+							Ok(name) => {
+								self.expect_token_and_read(Token::Assign)?;
+								param.insert(Ok(name), self.parse_expression(Precedence::Lowest)?);
+							}
+
+							Err(number) => {
+								param.insert(Err(number), self.parse_expression(Precedence::Lowest)?);
+							}
+						}
+
+						if self.current_is(Token::Comma) {
+							self.expect_token_and_read(Token::Comma)?;
+						}
+
+						params.push(param);
+					}
+
+					self.expect_token_and_read(Token::RightParen)?;
+
+					println!("{:?}", params);
+					Some(Expression::MethodCall(Box::new(left), field, params))
+				} else {
+					Some(Expression::GetProperty(Box::new(left), field))
+				}
 			}
+
 			Token::LeftBracket => {
 				self.expect_token_and_read(Token::LeftBracket)?;
 
@@ -530,6 +573,7 @@ impl<'p> Parser<'p> {
 	}
 
 	fn expect_token_and_read(&mut self, token: Token) -> Result<Token, ParseError> {
+		// TODO: Replace token for optional token
 		let result = self.expect_token(token)?;
 
 		self.read();

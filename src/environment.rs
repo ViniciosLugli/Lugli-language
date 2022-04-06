@@ -53,7 +53,8 @@ pub enum Value {
 	Null,
 	Bool(bool),
 	DateTime(DateTime<Utc>),
-	Struct { name: String, fields: Vec<Parameter>, methods: Rc<RefCell<HashMap<String, Value>>> },
+	GetSetProperty { name: String, get: Option<NativeMethodCallback>, set: Option<NativeMethodCallback> },
+	Struct { name: String, fields: Vec<Parameter>, methods: Rc<RefCell<HashMap<String, Value>>>, propreties: Option<Vec<Value>> },
 	StructInstance { environment: Rc<RefCell<Environment>>, definition: Box<Value> },
 	List(Rc<RefCell<Vec<Value>>>),
 	Function { name: String, params: Vec<Parameter>, body: Block, environment: Option<Environment>, context: Option<Expression> },
@@ -71,6 +72,7 @@ impl Debug for Value {
 				Value::Constant(v) => format!("{:?}", v),
 				Value::Number(n) => n.to_string(),
 				Value::String(s) => s.to_string(),
+				Value::DateTime(dt) => dt.to_string(),
 				Value::Null => "null".to_string(),
 				Value::NativeFunction { name, .. } => format!("<{}>", name),
 				Value::Function { name, params, .. } =>

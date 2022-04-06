@@ -147,7 +147,7 @@ mod structs {
 	pub mod time {
 		use super::arity;
 		use crate::{environment::Value, interpreter::Interpreter};
-		use chrono::{Datelike, Timelike, Utc};
+		use chrono::Utc;
 
 		pub fn sleep(_interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
 			arity("sleep!", 1, &args, false);
