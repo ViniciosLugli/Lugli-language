@@ -229,7 +229,6 @@ impl<'i> Interpreter<'i> {
 	}
 
 	pub fn call(&mut self, callable: Value, arguments: ArgumentValues) -> Result<Value, InterpreterResult> {
-		dbg!(&callable);
 		Ok(match callable {
 			Value::Constant(v) => self.call(*v, arguments)?,
 			Value::NativeFunction { callback, .. } => callback(self, arguments),
@@ -252,10 +251,9 @@ impl<'i> Interpreter<'i> {
 					new_environment.borrow_mut().set("this", context);
 				}
 
-				// FIXME: update to new arguments struct
-				//for (Parameter { name, .. }, value) in params.into_iter().filter(|p| p.name != "this").zip(arguments) {
-				//	new_environment.borrow_mut().set(name, value);
-				//}
+				for (Parameter { name, .. }, value) in params.clone().into_iter().filter(|p| p.name != "this").zip(arguments) {
+					new_environment.borrow_mut().set(name, value.get_value());
+				}
 
 				self.environment = new_environment;
 

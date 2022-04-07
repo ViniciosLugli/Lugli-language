@@ -54,6 +54,10 @@ impl ArgumentValued {
 	pub fn new(name: Option<String>, value: Value) -> Self {
 		Self { name, value }
 	}
+
+	pub fn get_value(&self) -> Value {
+		self.value.clone()
+	}
 }
 
 impl ArgumentValues {
@@ -87,6 +91,14 @@ impl ArgumentValues {
 
 	pub fn len(&self) -> usize {
 		self.params_values.len()
+	}
+}
+
+impl Iterator for ArgumentValues {
+	type Item = ArgumentValued;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		self.params_values.pop()
 	}
 }
 

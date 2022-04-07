@@ -178,7 +178,6 @@ impl<'p> Parser<'p> {
 
 		while !self.current_is(Token::Eof) && precedence < Precedence::token(self.current.clone()) {
 			if let Some(expression) = self.parse_postfix_expression(left.clone())? {
-				dbg!(&expression);
 				left = expression;
 			} else if let Some(expression) = self.parse_infix_expression(left.clone())? {
 				left = expression

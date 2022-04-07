@@ -3,7 +3,11 @@
 #Console.println!(Time)
 
 #teste(1, f = 2.0, s = "teste")
-Console.println!(content = "finalmente")
+fn test(teste){
+	Console.println!(content = teste)
+}
+
+test("ok")
 
 #create current_datetime = Time.datetime?()
 #create teste = current_datetime.seconds

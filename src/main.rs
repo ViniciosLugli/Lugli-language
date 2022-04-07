@@ -39,3 +39,6 @@ fn main() {
 		};
 	}
 }
+
+// TODO: Remake all tests.
+// TODO: Remake all examples.
