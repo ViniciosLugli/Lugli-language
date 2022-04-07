@@ -229,6 +229,7 @@ impl<'i> Interpreter<'i> {
 	}
 
 	pub fn call(&mut self, callable: Value, arguments: ArgumentValues) -> Result<Value, InterpreterResult> {
+		dbg!(&callable);
 		Ok(match callable {
 			Value::Constant(v) => self.call(*v, arguments)?,
 			Value::NativeFunction { callback, .. } => callback(self, arguments),
@@ -311,10 +312,17 @@ impl<'i> Interpreter<'i> {
 					_ => unreachable!(),
 				}
 			}
-			Expression::MethodCall(target, field, _arguments) => {
+			Expression::MethodCall(target, field, arguments) => {
 				let instance = self.run_expression(*target.clone())?;
+				let callable = self.get_property(instance, field, *target)?;
 
-				self.get_property(instance, field, *target)?
+				let mut arguments_value = ArgumentValues::new();
+
+				for argument in arguments.get_arguments().clone() {
+					arguments_value.push(ArgumentValued::new(argument.get_name().clone(), self.run_expression(argument.get_expression().clone())?));
+				}
+
+				self.call(callable, arguments_value)?
 			}
 			Expression::GetProperty(target, field) => {
 				let instance = self.run_expression(*target.clone())?;

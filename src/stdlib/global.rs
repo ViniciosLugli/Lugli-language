@@ -1,11 +1,15 @@
 use hashbrown::HashMap;
 
 use super::arity;
-use crate::environment::{NativeFunctionCallback, Value};
+use crate::{
+	ast::ArgumentValues,
+	environment::{NativeFunctionCallback, Value},
+	interpreter::Interpreter,
+};
 
 pub struct GlobalObject;
 
-// FIXME: Change all file to new CallArguments
+// FIXME: Change all file to new ArgumentValues
 
 impl GlobalObject {
 	pub fn get_all_functions() -> HashMap<String, NativeFunctionCallback> {
@@ -42,13 +46,13 @@ impl GlobalObject {
 
 //mod functions {
 //	use super::arity;
-//	use crate::ast::CallArguments;
+//	use crate::ast::ArgumentValues;
 //	use crate::parser::parse;
 //	use crate::token::generate;
 
 //	use crate::{environment::Value, interpreter::Interpreter};
 
-//	pub fn global_type(_: &mut Interpreter, args: CallArguments) -> Value {
+//	pub fn global_type(_: &mut Interpreter, args: ArgumentValues) -> Value {
 //		arity("type!", 1, &args, false);
 
 //		let arg = args.first().unwrap();
@@ -56,7 +60,7 @@ impl GlobalObject {
 //		Value::String(arg.clone().typestring())
 //	}
 
-//	pub fn global_import(interpreter: &mut Interpreter, args: CallArguments) -> Value {
+//	pub fn global_import(interpreter: &mut Interpreter, args: ArgumentValues) -> Value {
 //		arity("import!", 1, &args, false);
 
 //		let path = args.first().unwrap().clone().to_string();
@@ -100,7 +104,7 @@ mod structs {
 	//pub mod application {
 	//	use crate::{environment::Value, interpreter::Interpreter};
 
-	//	pub fn exit(_interpreter: &mut Interpreter, args: CallArguments) -> Value {
+	//	pub fn exit(_interpreter: &mut Interpreter, args: ArgumentValues) -> Value {
 	//		// arity("exit!", 0, &args, false); TODO: Implement arity with optional arguments
 
 	//		std::process::exit(if args.is_empty() { 0 } else { args.get(0).unwrap().clone().to_number() as i32 });
@@ -114,7 +118,6 @@ mod structs {
 
 		pub fn println(_: &mut Interpreter, args: ArgumentValues) -> Value {
 			arity("println!", 1, &args, true);
-			println!("Inside println!");
 
 			let content = args.get_from_name("content".to_string()).unwrap().clone().to_string();
 			let mut stdout = stdout();
@@ -125,7 +128,7 @@ mod structs {
 			Value::Null
 		}
 
-		//pub fn print(_: &mut Interpreter, args: CallArguments) -> Value {
+		//pub fn print(_: &mut Interpreter, args: ArgumentValues) -> Value {
 		//	arity("print!", 1, &args, true);
 
 		//	let arg = args.get(0).unwrap().clone();
@@ -137,7 +140,7 @@ mod structs {
 		//	Value::Null
 		//}
 
-		//pub fn input(_interpreter: &mut Interpreter, args: CallArguments) -> Value {
+		//pub fn input(_interpreter: &mut Interpreter, args: ArgumentValues) -> Value {
 		//	arity("input!", 0, &args, false);
 
 		//	let mut input = String::new();
@@ -153,7 +156,7 @@ mod structs {
 	//	use crate::{environment::Value, interpreter::Interpreter};
 	//	use chrono::Utc;
 
-	//	pub fn sleep(_interpreter: &mut Interpreter, args: CallArguments) -> Value {
+	//	pub fn sleep(_interpreter: &mut Interpreter, args: ArgumentValues) -> Value {
 	//		arity("sleep!", 1, &args, false);
 
 	//		let arg = args.get(0).unwrap().clone();
@@ -163,13 +166,13 @@ mod structs {
 	//		Value::Null
 	//	}
 
-	//	pub fn now(_interpreter: &mut Interpreter, args: CallArguments) -> Value {
+	//	pub fn now(_interpreter: &mut Interpreter, args: ArgumentValues) -> Value {
 	//		arity("now?", 0, &args, false);
 
 	//		Value::Number(Utc::now().timestamp() as f64)
 	//	}
 
-	//	pub fn datetime(_interpreter: &mut Interpreter, args: CallArguments) -> Value {
+	//	pub fn datetime(_interpreter: &mut Interpreter, args: ArgumentValues) -> Value {
 	//		arity("datetime?", 0, &args, false);
 
 	//		Value::DateTime(chrono::offset::Utc::now())
