@@ -503,7 +503,7 @@ impl<'p> Parser<'p> {
 
 			let field: String = self.expect_identifier_and_read()?.into();
 
-			fields.push(Parameter { name: field })
+			fields.push(Parameter { name: field, initial: None })
 		}
 
 		self.expect_token_and_read(Token::RightBrace)?;
@@ -527,7 +527,15 @@ impl<'p> Parser<'p> {
 
 			let param: String = self.expect_identifier_and_read()?.into();
 
-			params.push(Parameter { name: param })
+			if self.current_is(Token::Assign) {
+				self.expect_token_and_read(Token::Assign)?;
+
+				let initial = self.parse_expression(Precedence::Lowest)?;
+
+				params.push(Parameter { name: param, initial: Some(initial) });
+			} else {
+				params.push(Parameter { name: param, initial: None });
+			}
 		}
 
 		self.expect_token_and_read(Token::RightParen)?;

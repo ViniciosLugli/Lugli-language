@@ -43,6 +43,7 @@ pub struct ArgumentValues {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Parameter {
 	pub name: String,
+	pub initial: Option<Expression>,
 }
 #[derive(Debug, Clone, PartialEq)]
 pub struct Argument {
@@ -50,9 +51,31 @@ pub struct Argument {
 	expression: Expression,
 }
 
+impl Parameter {
+	pub fn new(name: String, initial: Option<Expression>) -> Self {
+		Self { name, initial }
+	}
+
+	pub fn get_name(&self) -> String {
+		self.name.clone()
+	}
+
+	pub fn get_initial(&self) -> Option<Expression> {
+		self.initial.clone()
+	}
+
+	pub fn has_initial(&self) -> bool {
+		self.initial.is_some()
+	}
+}
+
 impl ArgumentValued {
 	pub fn new(name: Option<String>, value: Value) -> Self {
 		Self { name, value }
+	}
+
+	pub fn get_name(&self) -> Option<String> {
+		self.name.clone()
 	}
 
 	pub fn get_value(&self) -> Value {

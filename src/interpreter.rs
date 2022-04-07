@@ -238,7 +238,17 @@ impl<'i> Interpreter<'i> {
 				callback(self, context, arguments)?
 			}
 			Value::Function { name, params, body, environment, context } => {
-				if params.first() != Some(&Parameter { name: "this".to_string() }) && params.len() != arguments.len() {
+				let mut params_to_satisfy = params.clone();
+
+				for argument in arguments.clone() {
+					if argument.get_name().is_some() && params_to_satisfy.iter().any(|param| param.get_name() == argument.get_name().unwrap()) {
+						params_to_satisfy.retain(|param| param.get_name() != argument.get_name().unwrap());
+					}
+				}
+
+				let params_without_value = params_to_satisfy.iter().filter(|param| !param.has_initial()).count();
+
+				if params.first() != Some(&Parameter { name: "this".to_string(), initial: None }) && params_without_value > arguments.len() {
 					return Err(InterpreterResult::TooFewArguments(name.clone(), arguments.len(), params.len()));
 				}
 
@@ -246,9 +256,14 @@ impl<'i> Interpreter<'i> {
 				let new_environment =
 					if environment.is_some() { Rc::new(RefCell::new(environment.unwrap())) } else { Rc::new(RefCell::new(Environment::new())) };
 
-				if context.is_some() && params.first() == Some(&Parameter { name: "this".to_string() }) {
+				if context.is_some() && params.first() == Some(&Parameter { name: "this".to_string(), initial: None }) {
 					let context = self.run_expression(context.unwrap())?;
 					new_environment.borrow_mut().set("this", context);
+				}
+
+				for params_with_initial in params.iter().filter(|param| param.has_initial()) {
+					let initial = self.run_expression(params_with_initial.get_initial().unwrap())?;
+					new_environment.borrow_mut().set(params_with_initial.get_name(), initial);
 				}
 
 				for (Parameter { name, .. }, value) in params.clone().into_iter().filter(|p| p.name != "this").zip(arguments) {
@@ -403,7 +418,7 @@ impl<'i> Interpreter<'i> {
 				let mut environment = Environment::new();
 
 				for (field, value) in fields {
-					if !field_definitions.contains(&Parameter { name: field.clone() }) {
+					if !field_definitions.contains(&Parameter { name: field.clone(), initial: None }) {
 						return Err(InterpreterResult::UndefinedField(name, field.clone()));
 					}
 
