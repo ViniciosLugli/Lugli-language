@@ -195,25 +195,15 @@ impl<'p> Parser<'p> {
 		let mut args: CallArguments = CallArguments::new();
 
 		while !self.current_is(Token::RightParen) {
-			let cursor: Option<String> = match self.current.clone() {
-				Token::Identifier(s) => {
-					self.expect_identifier_and_read()?;
-					Some(s.into())
-				}
+			let expression = self.parse_expression(Precedence::Lowest)?;
 
-				_ => None,
+			match expression {
+				Expression::Assign(param, value) => match *param {
+					Expression::Identifier(name) => args.add_argument(Argument::new(Some(name), *value)),
+					_ => return Err(ParseError::UnexpectedToken(self.current.clone())),
+				},
+				_ => args.add_argument(Argument::new(None, expression)),
 			};
-
-			match cursor {
-				Some(name) => {
-					self.expect_token_and_read(Token::Assign)?;
-					args.add_argument(Argument::new(Some(name), self.parse_expression(Precedence::Lowest)?));
-				}
-
-				None => {
-					args.add_argument(Argument::new(None, self.parse_expression(Precedence::Lowest)?));
-				}
-			}
 
 			if self.current_is(Token::Comma) {
 				self.expect_token_and_read(Token::Comma)?;

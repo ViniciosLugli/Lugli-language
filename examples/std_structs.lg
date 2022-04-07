@@ -1,6 +1,6 @@
 #Console.println!(Console)
 #Console.println!(Application)
-#Console.println!(Time)
+Console.println!(Time)
 
 fn test(teste = "default"){
 	Console.println!(content = teste)

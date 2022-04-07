@@ -104,6 +104,17 @@ impl ArgumentValues {
 		None
 	}
 
+	pub fn get_name_or_index(&self, name: String, index: usize) -> Option<Value> {
+		if let Some(value) = self.get_from_name(name) {
+			return Some(value);
+		}
+		self.get_from_index(index)
+	}
+
+	pub fn is_empty(&self) -> bool {
+		self.params_values.is_empty()
+	}
+
 	pub fn push(&mut self, argument_valued: ArgumentValued) {
 		self.params_values.push(argument_valued);
 	}
