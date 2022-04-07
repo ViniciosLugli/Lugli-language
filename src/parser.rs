@@ -199,7 +199,6 @@ impl<'p> Parser<'p> {
 			let cursor: Option<String> = match self.current.clone() {
 				Token::Identifier(s) => {
 					self.expect_identifier_and_read()?;
-					dbg!(&s.to_string());
 					Some(s.into())
 				}
 
@@ -224,7 +223,6 @@ impl<'p> Parser<'p> {
 
 		self.expect_token_and_read(Token::RightParen)?;
 
-		println!("{:?}", args);
 		Ok(args)
 	}
 

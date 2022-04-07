@@ -251,7 +251,7 @@ impl<'i> Interpreter<'i> {
 					new_environment.borrow_mut().set("this", context);
 				}
 
-				// FIX: update to new arguments struct
+				// FIXME: update to new arguments struct
 				//for (Parameter { name, .. }, value) in params.into_iter().filter(|p| p.name != "this").zip(arguments) {
 				//	new_environment.borrow_mut().set(name, value);
 				//}
@@ -311,7 +311,7 @@ impl<'i> Interpreter<'i> {
 					_ => unreachable!(),
 				}
 			}
-			Expression::MethodCall(target, field, arguments) => {
+			Expression::MethodCall(target, field, _arguments) => {
 				let instance = self.run_expression(*target.clone())?;
 
 				self.get_property(instance, field, *target)?
@@ -527,7 +527,7 @@ impl<'i> Interpreter<'i> {
 
 						assign_to_list(self, instance, index, value.clone())?;
 					}
-					Expression::MethodCall(instance, field, arguments) => {
+					Expression::MethodCall(instance, field, _arguments) => {
 						let instance = self.run_expression(*instance)?;
 
 						assign_to_instance(instance, field, value.clone())?;

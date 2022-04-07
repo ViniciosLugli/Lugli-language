@@ -43,7 +43,7 @@ fn datetime_format(_: &mut Interpreter, context: Value, args: ArgumentValues) ->
 	super::arity("DateTime.format!", 1, &args, false);
 
 	let datetime = context.to_datetime();
-	// FIX: Change to new ArgumentValues
+	// FIXME: Change to new ArgumentValues
 	// let format = args.get(0).unwrap().clone().to_string();
 	let format = ""; // Temp
 	Ok(Value::String(datetime.format(&format).to_string()))

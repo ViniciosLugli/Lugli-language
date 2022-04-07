@@ -5,7 +5,7 @@ use crate::environment::{NativeFunctionCallback, Value};
 
 pub struct GlobalObject;
 
-// FIX: Change all file to new CallArguments
+// FIXME: Change all file to new CallArguments
 
 impl GlobalObject {
 	pub fn get_all_functions() -> HashMap<String, NativeFunctionCallback> {
@@ -24,11 +24,11 @@ impl GlobalObject {
 		//application_methods.insert("exit!".to_string(), Value::NativeFunction { name: "exit!".to_string(), callback: structs::application::exit });
 		//global_struct.insert("Application".to_string(), application_methods);
 
-		//let mut console_methods = HashMap::<String, Value>::new();
+		let mut console_methods = HashMap::<String, Value>::new();
 		//console_methods.insert("print!".to_string(), Value::NativeFunction { name: "print!".to_string(), callback: structs::console::print });
-		//console_methods.insert("println!".to_string(), Value::NativeFunction { name: "println!".to_string(), callback: structs::console::println });
+		console_methods.insert("println!".to_string(), Value::NativeFunction { name: "println!".to_string(), callback: structs::console::println });
 		//console_methods.insert("input!".to_string(), Value::NativeFunction { name: "input!".to_string(), callback: structs::console::input });
-		//global_struct.insert("Console".to_string(), console_methods);
+		global_struct.insert("Console".to_string(), console_methods);
 
 		//let mut time_methods = HashMap::<String, Value>::new();
 		//time_methods.insert("sleep!".to_string(), Value::NativeFunction { name: "sleep!".to_string(), callback: structs::time::sleep });
@@ -114,11 +114,12 @@ mod structs {
 
 		pub fn println(_: &mut Interpreter, args: ArgumentValues) -> Value {
 			arity("println!", 1, &args, true);
+			println!("Inside println!");
 
-			let content = args;
+			let content = args.get_from_name("content".to_string()).unwrap().clone().to_string();
 			let mut stdout = stdout();
 
-			// stdout.write(format!("{}\n", content).as_bytes()).unwrap();
+			stdout.write(format!("{}\n", content).as_bytes()).unwrap();
 			stdout.flush().unwrap();
 
 			Value::Null

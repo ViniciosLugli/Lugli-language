@@ -8,7 +8,7 @@ use crate::{
 
 pub struct ListObject;
 
-// FIX: Change all file to new CallArguments
+// FIXME: Change all file to new CallArguments
 
 impl ListObject {
 	pub fn get(name: String) -> NativeMethodCallback {

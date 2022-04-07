@@ -2,8 +2,8 @@
 #Console.println!(Application)
 #Console.println!(Time)
 
-teste(1, f = 2.0, s = "teste")
-#Console.println!(content = "finalmente")
+#teste(1, f = 2.0, s = "teste")
+Console.println!(content = "finalmente")
 
 #create current_datetime = Time.datetime?()
 #create teste = current_datetime.seconds

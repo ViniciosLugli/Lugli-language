@@ -5,7 +5,7 @@ use crate::{
 };
 
 pub struct StringObject;
-// FIX: Change all file to new CallArguments
+// FIXME: Change all file to new CallArguments
 impl StringObject {
 	pub fn get(name: String) -> NativeMethodCallback {
 		match name.as_str() {
