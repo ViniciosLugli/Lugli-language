@@ -126,6 +126,14 @@ impl ArgumentValues {
 	pub fn len(&self) -> usize {
 		self.params_values.len()
 	}
+
+	pub fn get_all_values(&self) -> Vec<Value> {
+		let mut values = Vec::new();
+		for param in &self.params_values {
+			values.push(param.value.clone());
+		}
+		values
+	}
 }
 
 impl Iterator for ArgumentValues {
