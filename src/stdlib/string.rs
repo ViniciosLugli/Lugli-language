@@ -88,10 +88,6 @@ fn string_append(_: &mut Interpreter, context: Value, args: ArgumentValues) -> R
 	Ok(Value::String(string))
 }
 
-fn print_type_of<T>(_: &T) {
-	println!("{}", std::any::type_name::<T>())
-}
-
 fn string_tap(interpreter: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
 	super::arity("String.tap", 1, &args, false);
 
@@ -99,14 +95,7 @@ fn string_tap(interpreter: &mut Interpreter, context: Value, args: ArgumentValue
 
 	let mut callback = args.get_from_name_or_index("callback".to_string(), 0).unwrap();
 
-	// TODO: Add some better error handling here.
-
-	callback = match &callback {
-		Value::Function { .. } => callback,
-		Value::NativeFunction { .. } => callback,
-		Value::NativeMethod { .. } => callback,
-		_ => unreachable!(),
-	};
+	callback = super::parse_callback(callback);
 
 	let mut arguments_values = ArgumentValues::new();
 	arguments_values.push(ArgumentValued::new(None, string));

@@ -1,26 +1,28 @@
-create list = ["List", "Of", "Names"]
+create empty = []
 
-println!(list)
+Console.println!(empty.empty?())
 
-println!(list[0])
+create nums = [1, 2, 3, 4, 5]
 
-list[0] = "foo"
+Console.println!(nums.reverse!())
+Console.println!(nums.join!(", "))
 
-create name = list[0]
+Console.println!(nums.filter!(fn (num) {
+    return num < 3
+}))
 
-println!(name)
+nums.each!(fn (num) {
+    Console.println!(num)
+})
 
-list[] = "bar"
+nums.each(Console.println!)
 
-println!(list)
+create incrementedNums = nums.map!(fn (num) {
+    return num + 1
+})
 
-create nested = [
-    ["Person", "person@test.com"],
-    ["NotPerson", "NotPerson@test.com"]
-]
-
-println!(nested)
-
-nested[0][0] = "AlsoPerson"
-
-println!(nested)
+Console.println!(incrementedNums)
+Console.println!(incrementedNums.first!())
+Console.println!(incrementedNums.first!(fn (num) {
+    return num > 3
+}))

@@ -9,6 +9,7 @@ mod list;
 mod number;
 mod string;
 
+use clap::ValueHint;
 pub use datetime::DateTimeObject;
 pub use global::GlobalObject;
 pub use list::ListObject;
@@ -24,5 +25,14 @@ pub fn arity(name: &str, arity: usize, arguments: &ArgumentValues, multiples_ent
 		if arguments.len() != arity {
 			panic!("{} expects exactly {} arguments, but {} were given", name, arity, arguments.len());
 		}
+	}
+}
+
+pub fn parse_callback(callback: Value) -> Value {
+	match &callback {
+		Value::Function { .. } => callback,
+		Value::NativeFunction { .. } => callback,
+		Value::NativeMethod { .. } => callback,
+		_ => panic!("Callback is not a function callable"),
 	}
 }
