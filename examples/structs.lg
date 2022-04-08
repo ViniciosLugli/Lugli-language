@@ -9,7 +9,7 @@ Person.new = fn (name, email) {
 
 create person = Person.new("Lugli", "lugli@test.com")
 
-println!(person.name)
+Console.println!(person.name)
 
 struct Nested {
     person
@@ -22,8 +22,8 @@ create nested = Nested {
     }
 }
 
-println!(nested.person.name)
+Console.println!(nested.person.name)
 
 nested.person.name = "Cleiton"
 
-println!(nested.person.name)
+Console.println!(nested.person.name)

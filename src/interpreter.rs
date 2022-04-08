@@ -548,11 +548,12 @@ impl<'i> Interpreter<'i> {
 
 						assign_to_list(self, instance, index, value.clone())?;
 					}
-					Expression::MethodCall(instance, field, _arguments) => {
+					Expression::GetProperty(instance, property) => {
 						let instance = self.run_expression(*instance)?;
 
-						assign_to_instance(instance, field, value.clone())?;
+						assign_to_instance(instance, property.clone(), value.clone())?;
 					}
+
 					_ => {
 						match self.run_expression(*target.clone())? {
 							Value::Constant(_) => return Err(InterpreterResult::CannotAssignValueToConstant),
@@ -621,6 +622,7 @@ impl<'i> Interpreter<'i> {
 				}
 			}
 			Value::Struct { name, methods, .. } => {
+				dbg!(methods.clone());
 				if let Some(value) = methods.borrow().get(&field.clone()) {
 					value.clone()
 				} else {
@@ -631,7 +633,6 @@ impl<'i> Interpreter<'i> {
 			Value::Number(..) => Value::NativeMethod { name: field.clone(), callback: crate::stdlib::NumberObject::get(field), context: target },
 			Value::List(..) => Value::NativeMethod { name: field.clone(), callback: crate::stdlib::ListObject::get(field), context: target },
 			Value::DateTime(..) => {
-				println!("{:?}", &field);
 				Value::NativeMethod { name: field.clone(), callback: crate::stdlib::DateTimeObject::get_method(field), context: target }
 			}
 			Value::Constant(v) => self.get_property(*v, field, target)?,
