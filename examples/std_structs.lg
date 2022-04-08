@@ -1,16 +1,6 @@
-#Console.println!(Console)
-#Console.println!(Application)
-Console.println!(Time)
+create current_datetime = Time.datetime?()
+create teste = current_datetime.seconds
 
-fn test(teste = "default"){
-	Console.println!(content = teste)
-}
-
-test()
-
-#create current_datetime = Time.datetime?()
-#create teste = current_datetime.seconds
-
-#Console.println!(teste)
+Console.println!(teste)
 
 #Application.exit!()

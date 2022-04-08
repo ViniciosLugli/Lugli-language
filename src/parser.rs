@@ -220,7 +220,7 @@ impl<'p> Parser<'p> {
 			Token::Dot => {
 				self.expect_token_and_read(Token::Dot)?;
 
-				let field = self.expect_identifier_and_read()?.into();
+				let field: Identifier = self.expect_identifier_and_read()?.into();
 
 				if !self.current_is(Token::LeftParen) {
 					Some(Expression::GetProperty(Box::new(left), field))

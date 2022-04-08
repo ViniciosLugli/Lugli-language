@@ -298,7 +298,7 @@ impl<'i> Interpreter<'i> {
 	}
 
 	fn run_expression(&mut self, expression: Expression) -> Result<Value, InterpreterResult> {
-		Ok(match expression {
+		Ok(match expression.clone() {
 			Expression::Number(n) => Value::Number(n),
 			Expression::String(s) => Value::String(s),
 			Expression::Bool(b) => Value::Bool(b),
@@ -327,7 +327,7 @@ impl<'i> Interpreter<'i> {
 			}
 			Expression::MethodCall(target, field, arguments) => {
 				let instance = self.run_expression(*target.clone())?;
-				let callable = self.get_property(instance, field, *target)?;
+				let callable = self.get_property(instance, field, *target, expression)?;
 
 				let mut arguments_value = ArgumentValues::new();
 
@@ -340,7 +340,14 @@ impl<'i> Interpreter<'i> {
 			Expression::GetProperty(target, field) => {
 				let instance = self.run_expression(*target.clone())?;
 
-				self.get_property(instance, field, *target)?
+				let property = self.get_property(instance, field, *target, expression)?;
+
+				match property {
+					Value::Function { .. } | Value::NativeFunction { .. } | Value::NativeMethod { .. } => {
+						self.call(property, ArgumentValues::new())?
+					}
+					_ => property,
+				}
 			}
 			Expression::Infix(left, op, right) => {
 				let left = self.run_expression(*left)?;
@@ -602,7 +609,7 @@ impl<'i> Interpreter<'i> {
 		RefCell::borrow_mut(&self.environment)
 	}
 
-	fn get_property(&mut self, value: Value, field: String, target: Expression) -> Result<Value, InterpreterResult> {
+	fn get_property(&mut self, value: Value, field: String, target: Expression, expression: Expression) -> Result<Value, InterpreterResult> {
 		Ok(match value {
 			Value::StructInstance { environment, definition, .. } => {
 				if let Some(value) = environment.borrow().get(field.clone()) {
@@ -631,10 +638,16 @@ impl<'i> Interpreter<'i> {
 			Value::String(..) => Value::NativeMethod { name: field.clone(), callback: crate::stdlib::StringObject::get(field), context: target },
 			Value::Number(..) => Value::NativeMethod { name: field.clone(), callback: crate::stdlib::NumberObject::get(field), context: target },
 			Value::List(..) => Value::NativeMethod { name: field.clone(), callback: crate::stdlib::ListObject::get(field), context: target },
-			Value::DateTime(..) => {
-				Value::NativeMethod { name: field.clone(), callback: crate::stdlib::DateTimeObject::get_method(field), context: target }
-			}
-			Value::Constant(v) => self.get_property(*v, field, target)?,
+			Value::DateTime(..) => match expression {
+				Expression::GetProperty(..) => {
+					Value::NativeMethod { name: field.clone(), callback: crate::stdlib::DateTimeObject::get_property(field), context: target }
+				}
+				Expression::MethodCall(..) => {
+					Value::NativeMethod { name: field.clone(), callback: crate::stdlib::DateTimeObject::get_method(field), context: target }
+				}
+				_ => unreachable!(),
+			},
+			Value::Constant(v) => self.get_property(*v, field, target, expression)?,
 			_ => todo!(),
 		})
 	}

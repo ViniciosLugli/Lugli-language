@@ -1,15 +1,9 @@
 use hashbrown::HashMap;
 
 use super::arity;
-use crate::{
-	ast::ArgumentValues,
-	environment::{NativeFunctionCallback, Value},
-	interpreter::Interpreter,
-};
+use crate::environment::{NativeFunctionCallback, Value};
 
 pub struct GlobalObject;
-
-// FIXME: Change all file to new ArgumentValues
 
 impl GlobalObject {
 	pub fn get_all_functions() -> HashMap<String, NativeFunctionCallback> {

@@ -53,7 +53,6 @@ pub enum Value {
 	Null,
 	Bool(bool),
 	DateTime(DateTime<Utc>),
-	GetSetProperty { name: String, get: Option<NativeMethodCallback>, set: Option<NativeMethodCallback> },
 	Struct { name: String, fields: Vec<Parameter>, methods: Rc<RefCell<HashMap<String, Value>>>, propreties: Option<Vec<Value>> },
 	StructInstance { environment: Rc<RefCell<Environment>>, definition: Box<Value> },
 	List(Rc<RefCell<Vec<Value>>>),
@@ -74,7 +73,7 @@ impl Debug for Value {
 				Value::String(s) => s.to_string(),
 				Value::DateTime(dt) => dt.to_string(),
 				Value::Null => "null".to_string(),
-				Value::NativeFunction { name, .. } => format!("<{}>", name),
+				Value::NativeFunction { name, .. } | Value::NativeMethod { name, .. } => format!("<{}>", name),
 				Value::Function { name, params, .. } =>
 					format!("<{}>({})", name, params.into_iter().map(|p| p.name.clone()).collect::<Vec<String>>().join(", ")),
 				Value::StructInstance { definition, .. } => {
@@ -166,7 +165,7 @@ impl Value {
 			Value::Null => "".to_string(),
 			v @ Value::Function { .. } | v @ Value::StructInstance { .. } | v @ Value::List(..) => format!("{:?}", v),
 			Value::Constant(v) => v.to_string(),
-			Value::NativeFunction { name, .. } => format!("<{}>", name),
+			Value::NativeFunction { name, .. } | Value::NativeMethod { name, .. } => format!("<{}>", name),
 			Value::Struct { name, methods, fields, .. } => {
 				let name = format!("<struct:{}>", name);
 				let mut fields = fields.into_iter().map(|p| p.name.clone()).collect::<Vec<String>>();
@@ -255,7 +254,7 @@ impl Value {
 			Value::Bool(..) => "bool".into(),
 			Value::DateTime(..) => "datetime".into(),
 			Value::Null => "null".into(),
-			Value::Function { .. } | Value::NativeFunction { .. } => "function".into(),
+			Value::Function { .. } | Value::NativeFunction { .. } | Value::NativeMethod { .. } => "function".into(),
 			Value::StructInstance { definition, .. } => match *definition.clone() {
 				Value::Struct { name, .. } => name,
 				_ => unreachable!(),
