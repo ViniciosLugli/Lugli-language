@@ -55,7 +55,7 @@ mod functions {
 	pub fn global_type(_: &mut Interpreter, args: ArgumentValues) -> Value {
 		arity("type!", 1, &args, false);
 
-		let arg = args.get_name_or_index("value".to_string(), 0).unwrap();
+		let arg = args.get_from_name_or_index("value".to_string(), 0).unwrap();
 
 		Value::String(arg.clone().typestring())
 	}
@@ -63,7 +63,7 @@ mod functions {
 	pub fn global_import(interpreter: &mut Interpreter, args: ArgumentValues) -> Value {
 		arity("import!", 1, &args, false);
 
-		let path = args.get_name_or_index("path".to_string(), 0).unwrap().to_string();
+		let path = args.get_from_name_or_index("path".to_string(), 0).unwrap().to_string();
 		let directory = interpreter.path().parent().unwrap().to_path_buf();
 
 		let mut module_path = directory.clone();
@@ -107,7 +107,11 @@ mod structs {
 		pub fn exit(_interpreter: &mut Interpreter, args: ArgumentValues) -> Value {
 			// arity("exit!", 0, &args, false); TODO: Implement arity with optional arguments
 
-			std::process::exit(if args.is_empty() { 0 } else { args.get_name_or_index("code".to_string(), 0).unwrap().clone().to_number() as i32 });
+			std::process::exit(if args.is_empty() {
+				0
+			} else {
+				args.get_from_name_or_index("code".to_string(), 0).unwrap().clone().to_number() as i32
+			});
 		}
 	}
 
@@ -119,7 +123,7 @@ mod structs {
 		pub fn println(_: &mut Interpreter, args: ArgumentValues) -> Value {
 			arity("println!", 1, &args, true);
 
-			let content = args.get_name_or_index("content".to_string(), 0).unwrap().to_string();
+			let content = args.get_from_name_or_index("content".to_string(), 0).unwrap().to_string();
 			let mut stdout = stdout();
 
 			stdout.write(format!("{}\n", content).as_bytes()).unwrap();
@@ -131,7 +135,7 @@ mod structs {
 		pub fn print(_: &mut Interpreter, args: ArgumentValues) -> Value {
 			arity("print!", 1, &args, true);
 
-			let content = args.get_name_or_index("content".to_string(), 0).unwrap().to_string();
+			let content = args.get_from_name_or_index("content".to_string(), 0).unwrap().to_string();
 			let mut stdout = stdout();
 
 			stdout.write(content.as_bytes()).unwrap();

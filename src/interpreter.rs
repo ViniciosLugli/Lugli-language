@@ -622,7 +622,6 @@ impl<'i> Interpreter<'i> {
 				}
 			}
 			Value::Struct { name, methods, .. } => {
-				dbg!(methods.clone());
 				if let Some(value) = methods.borrow().get(&field.clone()) {
 					value.clone()
 				} else {

@@ -104,7 +104,7 @@ impl ArgumentValues {
 		None
 	}
 
-	pub fn get_name_or_index(&self, name: String, index: usize) -> Option<Value> {
+	pub fn get_from_name_or_index(&self, name: String, index: usize) -> Option<Value> {
 		if let Some(value) = self.get_from_name(name) {
 			return Some(value);
 		}

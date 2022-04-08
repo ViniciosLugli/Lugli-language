@@ -37,9 +37,9 @@ fn number_is_float(_: &mut Interpreter, context: Value, args: ArgumentValues) ->
 
 fn round_number(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
 	let number = context.to_number();
-	// FIXME: Change to new ArgumentValues
-	//let precision = if args.is_empty() { 0 } else { args.get(0).unwrap().clone().to_number() as usize };
-	let precision = 0; // Temp
+
+	let precision = if args.is_empty() { 0 } else { args.get_from_name_or_index("precision".to_string(), 0).unwrap().clone().to_number() as usize };
+
 	if precision == 0 {
 		return Ok(Value::Number(number.trunc()));
 	}
