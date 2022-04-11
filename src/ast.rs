@@ -193,6 +193,7 @@ pub enum Expression {
 	Closure(Vec<Parameter>, Vec<Statement>),
 	MethodCall(Box<Expression>, Identifier, CallArguments),
 	GetProperty(Box<Expression>, Identifier),
+	SetProperty(Box<Expression>, Identifier, Box<Expression>),
 	Index(Box<Expression>, Option<Box<Expression>>),
 	List(Vec<Expression>),
 }

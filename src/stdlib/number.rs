@@ -53,8 +53,6 @@ fn number_is_even(_: &mut Interpreter, context: Value, args: ArgumentValues) -> 
 	super::arity("Number.even?", 0, &args, false);
 
 	let number = context.to_number();
-	println!("{}", number);
-	println!("{:?}", Value::Bool(number % 2.0 == 0.0));
 	Ok(Value::Bool(number % 2.0 == 0.0))
 }
 

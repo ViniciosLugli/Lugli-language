@@ -11,22 +11,29 @@ impl DateTimeObject {
 		}
 	}
 
-	pub fn get_property(name: String) -> NativeMethodCallback {
+	pub fn getter_property(name: String) -> NativeMethodCallback {
 		match name.as_str() {
-			"nanoseconds" => gets::datetime_nanoseconds,
-			"seconds" => gets::datetime_seconds,
-			"minutes" => gets::datetime_minutes,
-			"hours" => gets::datetime_hours,
-			"days" => gets::datetime_days,
-			"weeks" => gets::datetime_weeks,
-			"months" => gets::datetime_months,
-			"years" => gets::datetime_years,
+			"nanoseconds" => getters::datetime_nanoseconds,
+			"seconds" => getters::datetime_seconds,
+			"minutes" => getters::datetime_minutes,
+			"hours" => getters::datetime_hours,
+			"days" => getters::datetime_days,
+			"weeks" => getters::datetime_weeks,
+			"months" => getters::datetime_months,
+			"years" => getters::datetime_years,
 			_ => panic!("Undefined property: `{}` for DateTime object", name),
 		}
 	}
 
-	pub fn set_property(name: String) -> NativeMethodCallback {
+	pub fn setter_property(name: String) -> NativeMethodCallback {
 		match name.as_str() {
+			"nanoseconds" => setters::datetime_nanoseconds,
+			"seconds" => setters::datetime_seconds,
+			"minutes" => setters::datetime_minutes,
+			"hours" => setters::datetime_hours,
+			"days" => setters::datetime_days,
+			"months" => setters::datetime_months,
+			"years" => setters::datetime_years,
 			_ => panic!("Undefined property: `{}` for DateTime object", name),
 		}
 	}
@@ -58,7 +65,7 @@ mod methods {
 	}
 }
 
-mod gets {
+mod getters {
 	use crate::{
 		ast::ArgumentValues,
 		environment::Value,
@@ -128,5 +135,99 @@ mod gets {
 		let datetime = context.to_datetime();
 
 		Ok(Value::Number(datetime.weekday().num_days_from_sunday() as f64))
+	}
+}
+
+mod setters {
+	use chrono::{Datelike, Timelike};
+
+	use crate::{
+		ast::ArgumentValues,
+		environment::Value,
+		interpreter::{Interpreter, InterpreterResult},
+	};
+
+	pub fn datetime_seconds(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
+		super::arity("DateTime.seconds", 1, &args, true);
+
+		let datetime = context.to_datetime();
+		let seconds = args.get_from_name_or_index("seconds".to_string(), 0).unwrap().to_number();
+		if let Some(result) = datetime.with_second(seconds as u32) {
+			Ok(Value::DateTime(result))
+		} else {
+			Err(InterpreterResult::Error(format!("Invalid set seconds for DateTime: {}", seconds)))
+		}
+	}
+
+	pub fn datetime_minutes(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
+		super::arity("DateTime.minutes", 1, &args, true);
+
+		let datetime = context.to_datetime();
+		let minutes = args.get_from_name_or_index("minutes".to_string(), 0).unwrap().to_number();
+		if let Some(result) = datetime.with_minute(minutes as u32) {
+			Ok(Value::DateTime(result))
+		} else {
+			Err(InterpreterResult::Error(format!("Invalid set minutes for DateTime: {}", minutes)))
+		}
+	}
+
+	pub fn datetime_hours(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
+		super::arity("DateTime.hours", 1, &args, true);
+
+		let datetime = context.to_datetime();
+		let hours = args.get_from_name_or_index("hours".to_string(), 0).unwrap().to_number();
+		if let Some(result) = datetime.with_hour(hours as u32) {
+			Ok(Value::DateTime(result))
+		} else {
+			Err(InterpreterResult::Error(format!("Invalid set hours for DateTime: {}", hours)))
+		}
+	}
+
+	pub fn datetime_nanoseconds(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
+		super::arity("DateTime.nanoseconds", 1, &args, true);
+
+		let datetime = context.to_datetime();
+		let nanoseconds = args.get_from_name_or_index("nanoseconds".to_string(), 0).unwrap().to_number();
+		if let Some(result) = datetime.with_nanosecond(nanoseconds as u32) {
+			Ok(Value::DateTime(result))
+		} else {
+			Err(InterpreterResult::Error(format!("Invalid set nanoseconds for DateTime: {}", nanoseconds)))
+		}
+	}
+
+	pub fn datetime_years(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
+		super::arity("DateTime.years", 1, &args, true);
+
+		let datetime = context.to_datetime();
+		let years = args.get_from_name_or_index("years".to_string(), 0).unwrap().to_number();
+		if let Some(result) = datetime.with_year(years as i32) {
+			Ok(Value::DateTime(result))
+		} else {
+			Err(InterpreterResult::Error(format!("Invalid set years for DateTime: {}", years)))
+		}
+	}
+
+	pub fn datetime_months(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
+		super::arity("DateTime.months", 1, &args, true);
+
+		let datetime = context.to_datetime();
+		let months = args.get_from_name_or_index("months".to_string(), 0).unwrap().to_number();
+		if let Some(result) = datetime.with_month(months as u32) {
+			Ok(Value::DateTime(result))
+		} else {
+			Err(InterpreterResult::Error(format!("Invalid set months for DateTime: {}", months)))
+		}
+	}
+
+	pub fn datetime_days(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
+		super::arity("DateTime.days", 1, &args, true);
+
+		let datetime = context.to_datetime();
+		let days = args.get_from_name_or_index("days".to_string(), 0).unwrap().to_number();
+		if let Some(result) = datetime.with_day(days as u32) {
+			Ok(Value::DateTime(result))
+		} else {
+			Err(InterpreterResult::Error(format!("Invalid set days for DateTime: {}", days)))
+		}
 	}
 }

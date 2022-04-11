@@ -1,4 +1,3 @@
-use clap::Arg;
 use colored::*;
 use hashbrown::HashMap;
 use std::slice::Iter;
@@ -223,7 +222,13 @@ impl<'p> Parser<'p> {
 				let field: Identifier = self.expect_identifier_and_read()?.into();
 
 				if !self.current_is(Token::LeftParen) {
-					Some(Expression::GetProperty(Box::new(left), field))
+					if self.current_is(Token::Assign) {
+						self.expect_token_and_read(Token::Assign)?;
+						let right = self.parse_expression(Precedence::Lowest)?;
+						Some(Expression::SetProperty(Box::new(left), field, Box::new(right)))
+					} else {
+						Some(Expression::GetProperty(Box::new(left), field))
+					}
 				} else {
 					let args = self.parse_arguments()?;
 					Some(Expression::MethodCall(Box::new(left), field, args))
