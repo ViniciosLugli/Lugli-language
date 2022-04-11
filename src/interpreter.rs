@@ -269,12 +269,16 @@ impl<'i> Interpreter<'i> {
 					new_environment.borrow_mut().set(params_with_initial.get_name(), initial);
 				}
 
-				for (Parameter { name, .. }, value) in params.clone().into_iter().filter(|p| p.name != "this").zip(arguments) {
-					new_environment.borrow_mut().set(name, value.get_value());
+				for argument in arguments {
+					if let Some(name) = argument.get_name() {
+						new_environment.borrow_mut().set(name, argument.get_value());
+					} else {
+						new_environment.borrow_mut().set(params_to_satisfy.pop().unwrap().get_name(), argument.get_value());
+					}
 				}
 
 				self.environment = new_environment;
-
+				//dbg!(self.environment.clone());
 				let mut return_value: Option<Value> = None;
 
 				for statement in body {
@@ -338,7 +342,7 @@ impl<'i> Interpreter<'i> {
 					arguments_value
 						.push_back(ArgumentValued::new(argument.get_name().clone(), self.run_expression(argument.get_expression().clone())?));
 				}
-
+				//dbg!(arguments_value.clone());
 				self.call(callable, arguments_value)?
 			}
 			Expression::GetProperty(target, field) => {
