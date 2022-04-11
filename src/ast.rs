@@ -119,6 +119,10 @@ impl ArgumentValues {
 		self.params_values.push(argument_valued);
 	}
 
+	pub fn push_back(&mut self, argument_valued: ArgumentValued) {
+		self.params_values.insert(0, argument_valued);
+	}
+
 	pub fn get_raw(&self) -> Vec<ArgumentValued> {
 		self.params_values.clone()
 	}

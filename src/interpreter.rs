@@ -335,7 +335,8 @@ impl<'i> Interpreter<'i> {
 				let mut arguments_value = ArgumentValues::new();
 
 				for argument in arguments.get_arguments().clone() {
-					arguments_value.push(ArgumentValued::new(argument.get_name().clone(), self.run_expression(argument.get_expression().clone())?));
+					arguments_value
+						.push_back(ArgumentValued::new(argument.get_name().clone(), self.run_expression(argument.get_expression().clone())?));
 				}
 
 				self.call(callable, arguments_value)?
@@ -355,22 +356,41 @@ impl<'i> Interpreter<'i> {
 			Expression::SetProperty(target, field, value) => {
 				let instance = self.run_expression(*target.clone())?;
 				let value = self.run_expression(*value)?;
-				let property = self.get_property(instance, field.clone(), *target.clone(), expression)?;
-				match property {
-					Value::Function { .. } | Value::NativeFunction { .. } | Value::NativeMethod { .. } => {
-						let mut args = ArgumentValues::new();
-						args.push(ArgumentValued::new(Some(field.clone()), value));
-						let result = self.call(property, args)?;
 
-						match *target.clone() {
-							Expression::Identifier(n) => self.env_mut().set(n, result),
-							_ => unreachable!(),
+				fn assign_to_instance(
+					interpreter: &mut Interpreter,
+					instance: Value,
+					field: String,
+					value: Value,
+					target: Expression,
+				) -> Result<(), InterpreterResult> {
+					Ok(match instance.clone() {
+						Value::StructInstance { environment, .. } => environment.borrow_mut().set(field, value.clone()),
+						Value::Struct { methods, .. } => {
+							if !matches!(value.clone(), Value::Function { .. }) {
+								return Err(InterpreterResult::InvalidMethodAssignmentTarget(instance.typestring()));
+							} else {
+								methods.borrow_mut().insert(field, value.clone());
+							}
 						}
+						Value::Constant(v) => assign_to_instance(interpreter, *v, field, value, target)?,
+						_ => {
+							let callback = interpreter.get_property(instance.clone(), field.clone(), target.clone(), target.clone())?;
+							let mut args = ArgumentValues::new();
 
-						Value::Null
-					}
-					_ => unreachable!(),
+							args.push(ArgumentValued::new(Some(field), value));
+
+							let result = interpreter.call(callback, args)?;
+							match target.clone() {
+								Expression::Identifier(i) => interpreter.env_mut().set(i, result),
+								_ => unimplemented!(),
+							}
+						}
+					})
 				}
+
+				assign_to_instance(self, instance, field, value, expression)?;
+				Value::Null
 			}
 			Expression::Infix(left, op, right) => {
 				let left = self.run_expression(*left)?;
@@ -534,42 +554,6 @@ impl<'i> Interpreter<'i> {
 
 			Expression::Assign(target, value) => {
 				let value = self.run_expression(*value)?;
-
-				fn assign_to_instance(
-					interpreter: &mut Interpreter,
-					instance: Value,
-					field: String,
-					value: Value,
-					target: Expression,
-				) -> Result<(), InterpreterResult> {
-					Ok(match instance.clone() {
-						// TODO: Check if the field exists on the definition before
-						// actually doing the assignment.
-						Value::StructInstance { environment, .. } => environment.borrow_mut().set(field, value.clone()),
-						Value::Struct { methods, .. } => {
-							if !matches!(value.clone(), Value::Function { .. }) {
-								return Err(InterpreterResult::InvalidMethodAssignmentTarget(instance.typestring()));
-							} else {
-								methods.borrow_mut().insert(field, value.clone());
-							}
-						}
-						Value::Constant(v) => assign_to_instance(interpreter, *v, field, value, target)?,
-						_ => {
-							dbg!(field.clone());
-							let callback = interpreter.get_property(instance.clone(), field.clone(), target.clone(), target.clone())?;
-							let mut args = ArgumentValues::new();
-
-							args.push(ArgumentValued::new(Some(field), value));
-
-							let result = interpreter.call(callback, args)?;
-							dbg!(result);
-							match target.clone() {
-								//Expression::Identifier(i) => interpreter.env_mut().set(i),
-								_ => unimplemented!(),
-							}
-						}
-					})
-				}
 
 				fn assign_to_list(
 					interpreter: &mut Interpreter,

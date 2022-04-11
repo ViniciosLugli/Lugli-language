@@ -1,7 +1,4 @@
-use crate::{
-	ast::{ArgumentValues, CallArguments},
-	environment::Value,
-};
+use crate::{ast::ArgumentValues, environment::Value};
 
 mod datetime;
 mod global;
@@ -9,7 +6,6 @@ mod list;
 mod number;
 mod string;
 
-use clap::ValueHint;
 pub use datetime::DateTimeObject;
 pub use global::GlobalObject;
 pub use list::ListObject;
