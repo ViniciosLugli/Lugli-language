@@ -269,16 +269,15 @@ impl<'i> Interpreter<'i> {
 					new_environment.borrow_mut().set(params_with_initial.get_name(), initial);
 				}
 
-				for argument in arguments {
-					if let Some(name) = argument.get_name() {
-						new_environment.borrow_mut().set(name, argument.get_value());
-					} else {
-						new_environment.borrow_mut().set(params_to_satisfy.pop().unwrap().get_name(), argument.get_value());
-					}
+				for argument in arguments.clone().filter(|param| param.get_name().is_some()) {
+					new_environment.borrow_mut().set(argument.get_name().unwrap(), argument.get_value());
+				}
+				for (param, ArgumentValued { value, .. }) in params_to_satisfy.iter().zip(arguments.filter(|param| param.get_name().is_none())) {
+					new_environment.borrow_mut().set(param.get_name(), value);
 				}
 
 				self.environment = new_environment;
-				//dbg!(self.environment.clone());
+
 				let mut return_value: Option<Value> = None;
 
 				for statement in body {

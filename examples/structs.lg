@@ -9,7 +9,7 @@ Person.new = fn (name, email) {
 
 #Console.println!(Person)
 
-create person = Person.new(email = "Lugli", name = "lugli@test.com")
+create person = Person.new(email = "Lugli", "lugli@test.com")
 
 Console.println!(person.name)
 
