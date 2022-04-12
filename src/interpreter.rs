@@ -143,7 +143,7 @@ impl<'i> Interpreter<'i> {
 						None => fields_filtred.push(field),
 					}
 				}
-				self.globals.insert(name.clone(), Value::Struct { name, fields, methods, propreties: None });
+				self.globals.insert(name.clone(), Value::Struct { name, fields: fields_filtred, methods, propreties: None });
 			}
 			Statement::For { iterable, value, index, then } => {
 				let iterable = self.run_expression(iterable)?;
@@ -662,13 +662,29 @@ impl<'i> Interpreter<'i> {
 	fn get_property(&mut self, value: Value, field: String, target: Expression, expression: Expression) -> Result<Value, InterpreterResult> {
 		Ok(match value {
 			Value::StructInstance { environment, definition, .. } => {
-				dbg!(definition.clone());
 				if let Some(value) = environment.borrow().get(field.clone()) {
+					dbg!(target.clone());
 					match value {
-						Value::Function { name, params, body, environment, .. } => {
-							Value::Function { name, params, body, environment, context: Some(target) }
-						}
-						_ => value,
+						Value::Function { name, params, body, environment, .. } => match expression.clone() {
+							Expression::MethodCall(..) => Value::Function { name, params, body, environment, context: Some(target) },
+							_ => {
+								if let Expression::Identifier(i) = target {
+									return Err(InterpreterResult::UndefinedField(i, field));
+								} else {
+									return Err(InterpreterResult::UndefinedField("None".to_string(), field));
+								}
+							}
+						},
+						_ => match expression.clone() {
+							Expression::GetProperty(..) => value,
+							_ => {
+								if let Expression::Identifier(i) = target {
+									return Err(InterpreterResult::UndefinedField(i, field));
+								} else {
+									return Err(InterpreterResult::UndefinedField("None".to_string(), field));
+								}
+							}
+						},
 					}
 				} else if let Some(value) = match *definition.clone() {
 					Value::Struct { fields, .. } => fields.iter().find(|p| p.name == field).map(|p| p.get_initial().clone()).unwrap_or_else(|| None),
