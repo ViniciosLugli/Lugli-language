@@ -1,5 +1,7 @@
 use hashbrown::HashMap;
 
+use self::structs::console;
+
 use super::arity;
 use crate::environment::{NativeFunctionCallback, Value};
 
@@ -26,6 +28,7 @@ impl GlobalObject {
 		console_methods.insert("print!".to_string(), Value::NativeFunction { name: "print!".to_string(), callback: structs::console::print });
 		console_methods.insert("println!".to_string(), Value::NativeFunction { name: "println!".to_string(), callback: structs::console::println });
 		console_methods.insert("input!".to_string(), Value::NativeFunction { name: "input!".to_string(), callback: structs::console::input });
+		console_methods.insert("clear!".to_string(), Value::NativeFunction { name: "clear!".to_string(), callback: structs::console::clear });
 		global_struct.insert("Console".to_string(), console_methods);
 
 		let mut time_methods = HashMap::<String, Value>::new();
@@ -146,6 +149,17 @@ mod structs {
 			std::io::stdin().read_line(&mut input).unwrap();
 
 			Value::String(input)
+		}
+
+		pub fn clear(_interpreter: &mut Interpreter, args: ArgumentValues) -> Value {
+			arity("clear!", 0, &args, false);
+
+			let mut stdout = stdout();
+
+			stdout.write(b"\x1b[2J").unwrap();
+			stdout.flush().unwrap();
+
+			Value::Null
 		}
 	}
 
