@@ -465,7 +465,7 @@ impl<'i> Interpreter<'i> {
 				let definition = self.run_expression(*definition)?;
 
 				let (name, field_definitions, methods) = match definition.clone() {
-					Value::Struct { name, fields, methods, propreties } => (name, fields, methods),
+					Value::Struct { name, fields, methods, .. } => (name, fields, methods),
 					_ => unreachable!(),
 				};
 
