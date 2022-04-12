@@ -256,6 +256,7 @@ impl<'i> Interpreter<'i> {
 				}
 
 				let old_environment = Rc::clone(&self.environment);
+
 				let new_environment =
 					if environment.is_some() { Rc::new(RefCell::new(environment.unwrap())) } else { Rc::new(RefCell::new(Environment::new())) };
 
@@ -643,6 +644,18 @@ impl<'i> Interpreter<'i> {
 						}
 						_ => value,
 					}
+				} else if let Some(value) = match *definition.clone() {
+					Value::Struct { fields, .. } => fields.iter().find(|p| p.name == field).map(|p| p.get_initial().clone()).unwrap_or_else(|| None),
+					_ => None,
+				} {
+					let initial = self.run_expression(value)?;
+
+					match initial {
+						Value::Function { name, params, body, environment, .. } => {
+							Value::Function { name, params, body, environment, context: Some(target) }
+						}
+						_ => initial,
+					}
 				} else {
 					let name = match *definition {
 						Value::Struct { name, .. } => name,
@@ -652,9 +665,18 @@ impl<'i> Interpreter<'i> {
 					return Err(InterpreterResult::UndefinedField(name, field));
 				}
 			}
-			Value::Struct { name, methods, .. } => {
+			Value::Struct { name, methods, fields, .. } => {
 				if let Some(value) = methods.borrow().get(&field.clone()) {
 					value.clone()
+				} else if let Some(value) = fields.iter().find(|p| p.name == field).map(|p| p.get_initial().clone()).unwrap_or_else(|| None) {
+					let initial = self.run_expression(value)?;
+
+					match initial {
+						Value::Function { name, params, body, environment, .. } => {
+							Value::Function { name, params, body, environment, context: Some(target) }
+						}
+						_ => initial,
+					}
 				} else {
 					return Err(InterpreterResult::UndefinedMethod(name, field));
 				}

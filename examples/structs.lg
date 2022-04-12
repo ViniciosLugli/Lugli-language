@@ -1,15 +1,14 @@
 struct Person {
-    name,
-    email
-}
-
-Person.new = fn (name, email) {
-    return Person { name, email }
+    name = "cleiton",
+    email,
+    new = fn (email_person) {
+        return Person { email: email_person }
+    }
 }
 
 #Console.println!(Person)
 
-create person = Person.new(email = "Lugli", "lugli@test.com")
+create person = Person.new("lugli@test.com")
 
 Console.println!(person.name)
 

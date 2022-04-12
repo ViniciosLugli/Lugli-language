@@ -499,7 +499,17 @@ impl<'p> Parser<'p> {
 
 			let field: String = self.expect_identifier_and_read()?.into();
 
-			fields.push(Parameter { name: field, initial: None })
+			match self.current.clone() {
+				Token::Comma | Token::RightBrace => fields.push(Parameter { name: field, initial: None }),
+				Token::Assign => {
+					self.expect_token_and_read(Token::Assign)?;
+
+					let initial = self.parse_expression(Precedence::Lowest)?;
+
+					fields.push(Parameter { name: field, initial: Some(initial) });
+				}
+				_ => unreachable!(),
+			}
 		}
 
 		self.expect_token_and_read(Token::RightBrace)?;
