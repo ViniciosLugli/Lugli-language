@@ -686,6 +686,7 @@ impl<'i> Interpreter<'i> {
 			Value::List(..) => Value::NativeMethod { name: field.clone(), callback: crate::stdlib::ListObject::get(field), context: target },
 			Value::Constant(v) => self.get_property(*v, field, target, expression)?,
 			_ => match expression {
+				// TODO: Remake origin of stdlib objects
 				Expression::GetProperty(..) => {
 					Value::NativeMethod { name: field.clone(), callback: crate::stdlib::DateTimeObject::getter_property(field), context: target }
 				}

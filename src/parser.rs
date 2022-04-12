@@ -493,22 +493,29 @@ impl<'p> Parser<'p> {
 		let mut fields: Vec<Parameter> = Vec::new();
 
 		while !self.current_is(Token::RightBrace) {
-			if self.current_is(Token::Comma) {
-				self.expect_token_and_read(Token::Comma)?;
-			}
+			if self.current_is(Token::Fn) {
+				let function = self.parse_fn(true)?;
+				if let Statement::FunctionDeclaration { name, params, body } = function {
+					let closure = Expression::Closure(params.clone(), body);
 
-			let field: String = self.expect_identifier_and_read()?.into();
-
-			match self.current.clone() {
-				Token::Comma | Token::RightBrace => fields.push(Parameter { name: field, initial: None }),
-				Token::Assign => {
-					self.expect_token_and_read(Token::Assign)?;
-
-					let initial = self.parse_expression(Precedence::Lowest)?;
-
-					fields.push(Parameter { name: field, initial: Some(initial) });
+					fields.push(Parameter { name, initial: Some(closure) });
+				} else {
+					return Err(ParseError::UnexpectedToken(self.current.clone()));
 				}
-				_ => unreachable!(),
+			} else {
+				let field: String = self.expect_identifier_and_read()?.into();
+
+				match self.current.clone() {
+					Token::Comma | Token::RightBrace | Token::Fn => fields.push(Parameter { name: field, initial: None }),
+					Token::Assign => {
+						self.expect_token_and_read(Token::Assign)?;
+
+						let initial = self.parse_expression(Precedence::Lowest)?;
+
+						fields.push(Parameter { name: field, initial: Some(initial) });
+					}
+					_ => unreachable!(),
+				}
 			}
 		}
 
