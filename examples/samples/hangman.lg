@@ -1,0 +1,17 @@
+struct Objetive {
+	word
+	founded = []
+
+	fn new(word) {
+		return Objetive { word: word }
+	}
+
+	fn check_letter(this){
+		#Console.println!(letter)
+		return this.word.contains?("x")
+	}
+}
+
+create objetive = Objetive.new("vinicios")
+
+Console.println!(objetive.check_letter)

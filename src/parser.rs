@@ -221,7 +221,10 @@ impl<'p> Parser<'p> {
 
 				let field: Identifier = self.expect_identifier_and_read()?.into();
 
-				if !self.current_is(Token::LeftParen) {
+				if self.current_is(Token::LeftParen) {
+					let args = self.parse_arguments()?;
+					Some(Expression::MethodCall(Box::new(left), field, args))
+				} else {
 					if self.current_is(Token::Assign) {
 						self.expect_token_and_read(Token::Assign)?;
 						let right = self.parse_expression(Precedence::Lowest)?;
@@ -229,9 +232,6 @@ impl<'p> Parser<'p> {
 					} else {
 						Some(Expression::GetProperty(Box::new(left), field))
 					}
-				} else {
-					let args = self.parse_arguments()?;
-					Some(Expression::MethodCall(Box::new(left), field, args))
 				}
 			}
 
@@ -506,7 +506,7 @@ impl<'p> Parser<'p> {
 				let field: String = self.expect_identifier_and_read()?.into();
 
 				match self.current.clone() {
-					Token::Comma | Token::RightBrace | Token::Fn => fields.push(Parameter { name: field, initial: None }),
+					Token::Comma | Token::RightBrace | Token::Fn | Token::Identifier(..) => fields.push(Parameter { name: field, initial: None }),
 					Token::Assign => {
 						self.expect_token_and_read(Token::Assign)?;
 

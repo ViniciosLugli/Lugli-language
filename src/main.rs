@@ -42,4 +42,5 @@ fn main() {
 
 // TODO: Remake all tests.
 // TODO: Remake all examples.
-// TODO: Replace vars 'clone' for references
+// TODO: Replace vars 'clone' for references.
+// TODO: Better error handling.
