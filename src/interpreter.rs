@@ -143,6 +143,7 @@ impl<'i> Interpreter<'i> {
 						None => fields_filtred.push(field),
 					}
 				}
+
 				self.globals.insert(name.clone(), Value::Struct { name, fields: fields_filtred, methods, propreties: None });
 			}
 			Statement::For { iterable, value, index, then } => {
@@ -267,7 +268,18 @@ impl<'i> Interpreter<'i> {
 
 				callback(self, context, arguments)?
 			}
-			Value::Function { name, params, body, environment, context } => {
+			Value::Function { name, mut params, body, environment, context } => {
+				let old_environment = Rc::clone(&self.environment);
+
+				let new_environment =
+					if environment.is_some() { Rc::new(RefCell::new(environment.unwrap())) } else { Rc::new(RefCell::new(Environment::new())) };
+
+				if context.is_some() && params.first() == Some(&Parameter { name: "this".to_string(), initial: None }) {
+					let context = self.run_expression(context.unwrap())?;
+					new_environment.borrow_mut().set("this", context);
+					params = params.iter().filter(|p| p.name != "this").cloned().collect();
+				}
+
 				let mut params_to_satisfy = params.clone();
 
 				for argument in arguments.clone() {
@@ -278,18 +290,8 @@ impl<'i> Interpreter<'i> {
 
 				let params_without_value = params_to_satisfy.iter().filter(|param| !param.has_initial()).count();
 
-				if params.first() != Some(&Parameter { name: "this".to_string(), initial: None }) && params_without_value > arguments.len() {
-					return Err(InterpreterResult::TooFewArguments(name.clone(), arguments.len(), params.len()));
-				}
-
-				let old_environment = Rc::clone(&self.environment);
-
-				let new_environment =
-					if environment.is_some() { Rc::new(RefCell::new(environment.unwrap())) } else { Rc::new(RefCell::new(Environment::new())) };
-
-				if context.is_some() && params.first() == Some(&Parameter { name: "this".to_string(), initial: None }) {
-					let context = self.run_expression(context.unwrap())?;
-					new_environment.borrow_mut().set("this", context);
+				if params_without_value > arguments.len() {
+					return Err(InterpreterResult::TooFewArguments(name.clone(), arguments.len(), params_without_value));
 				}
 
 				for params_with_initial in params.iter().filter(|param| param.has_initial()) {
@@ -297,7 +299,7 @@ impl<'i> Interpreter<'i> {
 					new_environment.borrow_mut().set(params_with_initial.get_name(), initial);
 				}
 
-				for argument in arguments.clone().filter(|param| param.get_name().is_some()) {
+				for argument in arguments.clone().filter(|arg| arg.get_name().is_some()) {
 					new_environment.borrow_mut().set(argument.get_name().unwrap(), argument.get_value());
 				}
 				for (param, ArgumentValued { value, .. }) in params_to_satisfy.iter().zip(arguments.filter(|param| param.get_name().is_none())) {
@@ -663,7 +665,6 @@ impl<'i> Interpreter<'i> {
 		Ok(match value {
 			Value::StructInstance { environment, definition, .. } => {
 				if let Some(value) = environment.borrow().get(field.clone()) {
-					dbg!(target.clone());
 					match value {
 						Value::Function { name, params, body, environment, .. } => match expression.clone() {
 							Expression::MethodCall(..) => Value::Function { name, params, body, environment, context: Some(target) },

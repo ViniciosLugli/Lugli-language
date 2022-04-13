@@ -6,12 +6,12 @@ struct Objetive {
 		return Objetive { word: word }
 	}
 
-	fn check_letter(this){
+	fn check_letter(this, letter){
 		#Console.println!(letter)
-		return this.word.contains?("x")
+		return this.word.contains?(letter)
 	}
 }
 
 create objetive = Objetive.new("vinicios")
 
-Console.println!(objetive.check_letter)
+Console.println!(objetive.check_letter("i"))
