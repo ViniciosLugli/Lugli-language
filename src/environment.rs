@@ -60,6 +60,7 @@ pub enum Value {
 	NativeFunction { name: String, callback: NativeFunctionCallback },
 	NativeMethod { name: String, callback: NativeMethodCallback, context: Expression },
 	Constant(Box<Value>),
+	Mutable(Box<Value>),
 }
 
 impl Debug for Value {

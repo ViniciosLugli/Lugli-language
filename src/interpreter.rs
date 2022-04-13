@@ -333,6 +333,38 @@ impl<'i> Interpreter<'i> {
 		})
 	}
 
+	fn assign_to_instance(
+		&mut self,
+		instance: Value,
+		field: String,
+		value: Value,
+		target: Expression,
+		expression: Expression,
+	) -> Result<(), InterpreterResult> {
+		Ok(match instance.clone() {
+			Value::StructInstance { environment, .. } => environment.borrow_mut().set(field, value.clone()),
+			Value::Struct { methods, .. } => {
+				if !matches!(value.clone(), Value::Function { .. }) {
+					return Err(InterpreterResult::InvalidMethodAssignmentTarget(instance.typestring()));
+				} else {
+					methods.borrow_mut().insert(field, value.clone());
+				}
+			}
+			Value::Constant(v) => self.assign_to_instance(*v, field, value, target, expression)?,
+			_ => {
+				let callback = self.get_property(instance.clone(), field.clone(), target.clone(), expression.clone())?;
+				let mut args = ArgumentValues::new();
+				args.push(ArgumentValued::new(Some(field), value));
+
+				let result = self.call(callback, args)?;
+				match target.clone() {
+					Expression::Identifier(i) => self.env_mut().set(i, result),
+					_ => unimplemented!(),
+				}
+			}
+		})
+	}
+
 	fn run_expression(&mut self, expression: Expression) -> Result<Value, InterpreterResult> {
 		Ok(match expression.clone() {
 			Expression::Number(n) => Value::Number(n),
@@ -363,7 +395,7 @@ impl<'i> Interpreter<'i> {
 			}
 			Expression::MethodCall(target, field, arguments) => {
 				let instance = self.run_expression(*target.clone())?;
-				let callable = self.get_property(instance, field, *target, expression)?;
+				let callable = self.get_property(instance.clone(), field.clone(), *target.clone(), expression.clone())?;
 
 				let mut arguments_value = ArgumentValues::new();
 
@@ -371,7 +403,21 @@ impl<'i> Interpreter<'i> {
 					arguments_value
 						.push_back(ArgumentValued::new(argument.get_name().clone(), self.run_expression(argument.get_expression().clone())?));
 				}
-				self.call(callable, arguments_value)?
+
+				let result = self.call(callable, arguments_value);
+				//dbg!(&result);
+				match result {
+					Ok(Value::Mutable(value)) => {
+						if let Expression::Identifier(i) = *target.clone() {
+							self.env_mut().set(i, *value);
+						} else {
+							unimplemented!()
+						}
+					}
+					_ => return result,
+				};
+
+				Value::Null
 			}
 			Expression::GetProperty(target, field) => {
 				let instance = self.run_expression(*target.clone())?;
@@ -388,39 +434,7 @@ impl<'i> Interpreter<'i> {
 				let instance = self.run_expression(*target.clone())?;
 				let value = self.run_expression(*value)?;
 
-				fn assign_to_instance(
-					interpreter: &mut Interpreter,
-					instance: Value,
-					field: String,
-					value: Value,
-					target: Expression,
-					expression: Expression,
-				) -> Result<(), InterpreterResult> {
-					Ok(match instance.clone() {
-						Value::StructInstance { environment, .. } => environment.borrow_mut().set(field, value.clone()),
-						Value::Struct { methods, .. } => {
-							if !matches!(value.clone(), Value::Function { .. }) {
-								return Err(InterpreterResult::InvalidMethodAssignmentTarget(instance.typestring()));
-							} else {
-								methods.borrow_mut().insert(field, value.clone());
-							}
-						}
-						Value::Constant(v) => assign_to_instance(interpreter, *v, field, value, target, expression)?,
-						_ => {
-							let callback = interpreter.get_property(instance.clone(), field.clone(), target.clone(), expression.clone())?;
-							let mut args = ArgumentValues::new();
-							args.push(ArgumentValued::new(Some(field), value));
-
-							let result = interpreter.call(callback, args)?;
-							match target.clone() {
-								Expression::Identifier(i) => interpreter.env_mut().set(i, result),
-								_ => unimplemented!(),
-							}
-						}
-					})
-				}
-
-				assign_to_instance(self, instance, field, value, *target, expression)?;
+				self.assign_to_instance(instance, field, value, *target, expression)?;
 				Value::Null
 			}
 			Expression::Infix(left, op, right) => {
