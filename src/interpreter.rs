@@ -161,11 +161,24 @@ impl<'i> Interpreter<'i> {
 
 				let items = match iterable {
 					Value::List(items) => items,
+					Value::String(s) => {
+						let mut items = Vec::new();
+						for c in s.chars() {
+							items.push(Value::String(c.to_string()));
+						}
+						Rc::new(RefCell::new(items))
+					}
+					Value::Number(n) => {
+						let mut items = Vec::new();
+						let n = n as i64;
+						for i in 0..n {
+							items.push(Value::Number(i as f64));
+						}
+						Rc::new(RefCell::new(items))
+					}
 					_ => return Err(InterpreterResult::InvalidIterable(iterable.typestring())),
 				};
 
-				// If there aren't any items in the list, we can leave this execution
-				// cycle early.
 				if items.borrow().is_empty() {
 					return Ok(());
 				}

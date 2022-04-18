@@ -110,8 +110,10 @@ impl Debug for Value {
 					let items = items.borrow();
 
 					for (i, item) in items.iter().enumerate() {
-						buffer.push_str(&item.clone().to_string());
-
+						match &item {
+							Value::String(_) => buffer.push_str(&format!("\"{}\"", &item.clone().to_string())),
+							_ => buffer.push_str(&item.clone().to_string()),
+						}
 						if i != items.len() - 1 {
 							buffer.push_str(", ");
 						}
