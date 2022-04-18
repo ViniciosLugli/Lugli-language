@@ -14,6 +14,16 @@ use crate::{
 	environment::{self, *},
 };
 
+#[macro_export]
+macro_rules! extract_enum_value {
+	($value:expr, $pattern:pat => $extracted_value:expr) => {
+		match $value {
+			$pattern => $extracted_value,
+			_ => panic!("Pattern doesn't match!"),
+		}
+	};
+}
+
 pub fn register_global_functions(interpreter: &mut Interpreter) {
 	for (name, function) in crate::stdlib::GlobalObject::get_all_functions() {
 		interpreter.define_global_function(name, function);
@@ -354,11 +364,18 @@ impl<'i> Interpreter<'i> {
 			_ => {
 				let callback = self.get_property(instance.clone(), field.clone(), target.clone(), expression.clone())?;
 				let mut args = ArgumentValues::new();
-				args.push(ArgumentValued::new(Some(field), value));
+				args.push(ArgumentValued::new(Some(field.clone()), value.clone()));
 
 				let result = self.call(callback, args)?;
+
 				match target.clone() {
 					Expression::Identifier(i) => self.env_mut().set(i, result),
+					Expression::GetProperty(t, f) => {
+						if *t == Expression::Identifier("this".to_string()) {
+							let obj = self.env_mut().get("this").unwrap();
+							return self.assign_to_instance(obj, f, value, target, expression);
+						}
+					}
 					_ => unimplemented!(),
 				}
 			}
@@ -405,14 +422,9 @@ impl<'i> Interpreter<'i> {
 				}
 
 				let result = self.call(callable, arguments_value);
-				//dbg!(&result);
 				match result {
 					Ok(Value::Mutable(value)) => {
-						if let Expression::Identifier(i) = *target.clone() {
-							self.env_mut().set(i, *value);
-						} else {
-							unimplemented!()
-						}
+						self.assign_to_instance(instance, field, *value, *target, expression)?;
 					}
 					_ => return result,
 				};

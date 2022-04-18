@@ -17,7 +17,5 @@ struct Objetive {
 }
 
 create objetive = Objetive.new("vinicios")
-create l = ["v"]
-l.push!("i")
-Console.println!(l)
-#Console.println!(objetive.check_letter("i"))
+
+Console.println!(objetive.check_letter("i"))
