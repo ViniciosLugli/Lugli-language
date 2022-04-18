@@ -75,6 +75,7 @@ impl Debug for Value {
 				Value::DateTime(dt) => dt.to_string(),
 				Value::Null => "null".to_string(),
 				Value::NativeFunction { name, .. } | Value::NativeMethod { name, .. } => format!("<{}>", name),
+				Value::Mutable(v) => format!("<mutable {:?}>", v),
 				Value::Function { name, params, .. } =>
 					format!("<{}>({})", name, params.into_iter().map(|p| p.name.clone()).collect::<Vec<String>>().join(", ")),
 				Value::StructInstance { definition, .. } => {
@@ -124,6 +125,7 @@ impl Debug for Value {
 				}
 				Value::Bool(true) => "true".to_string(),
 				Value::Bool(false) => "false".to_string(),
+
 				_ => todo!(),
 			}
 		)
@@ -167,6 +169,7 @@ impl Value {
 			Value::DateTime(dt) => dt.to_rfc3339(),
 			Value::Null => "".to_string(),
 			v @ Value::Function { .. } | v @ Value::StructInstance { .. } | v @ Value::List(..) => format!("{:?}", v),
+			Value::Mutable(v) => format!("<mutable {:?}>", v),
 			Value::Constant(v) => v.to_string(),
 			Value::NativeFunction { name, .. } | Value::NativeMethod { name, .. } => format!("<{}>", name),
 			Value::Struct { name, methods, fields, .. } => {

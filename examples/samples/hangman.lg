@@ -4,12 +4,12 @@ struct Objetive {
 
 	fn new(word) {
 		create obj = Objetive { word: word }
-
+		create a = [1]
 		for item in obj.word {
-			obj.founded.push!(item)
+			a.push!(item)
 		}
 
-		Console.println!(obj.founded)
+		Console.println!(a)
 
 		return obj
 	}
@@ -27,6 +27,10 @@ struct Objetive {
 	}
 }
 
+#create a = [2]
+#a.push!("b")
+#Console.println!(a)
+
 create objetive = Objetive.new("vinicios")
 
-#Console.println!(objetive.check_letter("i"))
+Console.println!(objetive.check_letter("i"))

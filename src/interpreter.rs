@@ -347,7 +347,7 @@ impl<'i> Interpreter<'i> {
 				self.environment = old_environment;
 
 				if return_value.is_some() {
-					return_value.unwrap()
+					return_value.unwrap().clone()
 				} else {
 					Value::Null
 				}
@@ -383,12 +383,6 @@ impl<'i> Interpreter<'i> {
 
 				match target.clone() {
 					Expression::Identifier(i) => self.env_mut().set(i, result),
-					Expression::GetProperty(t, f) => {
-						if *t == Expression::Identifier("this".to_string()) {
-							let obj = self.env_mut().get("this").unwrap();
-							return self.assign_to_instance(obj, f, value, target, expression);
-						}
-					}
 					_ => unimplemented!(),
 				}
 			}
@@ -434,12 +428,23 @@ impl<'i> Interpreter<'i> {
 						.push_back(ArgumentValued::new(argument.get_name().clone(), self.run_expression(argument.get_expression().clone())?));
 				}
 
-				let result = self.call(callable, arguments_value);
+				let result = self.call(callable, arguments_value)?;
+
 				match result {
-					Ok(Value::Mutable(value)) => {
-						self.assign_to_instance(instance, field, *value, *target, expression)?;
-					}
-					_ => return result,
+					Value::Mutable(value) => match *target.clone() {
+						Expression::Identifier(i) => self.env_mut().set(i, *value),
+						Expression::GetProperty(t, f) => {
+							if *t == Expression::Identifier("this".to_string()) {
+								let obj = self.env_mut().get("this").unwrap();
+								match obj {
+									Value::StructInstance { environment, .. } => environment.borrow_mut().set(f, *value),
+									_ => unreachable!(),
+								};
+							}
+						}
+						_ => unimplemented!(),
+					},
+					_ => return Ok(result),
 				};
 
 				Value::Null
