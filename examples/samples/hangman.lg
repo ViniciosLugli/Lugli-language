@@ -33,4 +33,4 @@ struct Objetive {
 
 create objetive = Objetive.new("vinicios")
 
-Console.println!(objetive.check_letter("i"))
+Console.println!(objetive.check_letter)
