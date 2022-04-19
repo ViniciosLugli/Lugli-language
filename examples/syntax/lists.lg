@@ -1,0 +1,28 @@
+create empty = []
+
+Console.println!(empty.empty?())
+
+create nums = [1, 2, 3, 4, 5]
+
+Console.println!(nums.reverse!())
+Console.println!(nums.join!(", "))
+
+Console.println!(nums.filter!(fn (num) {
+    return num < 3
+}))
+
+nums.each!(fn (num) {
+    Console.println!(num)
+})
+
+nums.each(Console.println!)
+
+create incrementedNums = nums.map!(fn (num) {
+    return num + 1
+})
+
+Console.println!(incrementedNums)
+Console.println!(incrementedNums.first!())
+Console.println!(incrementedNums.first!(fn (num) {
+    return num > 3
+}))

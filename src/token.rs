@@ -159,9 +159,9 @@ pub enum Token {
 
 	Eof,
 
-	#[error]
 	#[regex(r"#[^\n]*", logos::skip)]
 	#[regex(r"[ \t\n\f]+", logos::skip)]
+	#[error]
 	Error,
 }
 

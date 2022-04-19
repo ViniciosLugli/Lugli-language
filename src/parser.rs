@@ -188,15 +188,53 @@ impl<'p> Parser<'p> {
 		Ok(left)
 	}
 
+	fn parse_arguments(&mut self) -> Result<CallArguments, ParseError> {
+		self.expect_token_and_read(Token::LeftParen)?;
+
+		let mut args: CallArguments = CallArguments::new();
+
+		while !self.current_is(Token::RightParen) {
+			let expression = self.parse_expression(Precedence::Lowest)?;
+
+			match expression {
+				Expression::Assign(param, value) => match *param {
+					Expression::Identifier(name) => args.add_argument(Argument::new(Some(name), *value)),
+					_ => return Err(ParseError::UnexpectedToken(self.current.clone())),
+				},
+				_ => args.add_argument(Argument::new(None, expression)),
+			};
+
+			if self.current_is(Token::Comma) {
+				self.expect_token_and_read(Token::Comma)?;
+			}
+		}
+
+		self.expect_token_and_read(Token::RightParen)?;
+
+		Ok(args)
+	}
+
 	fn parse_postfix_expression(&mut self, left: Expression) -> Result<Option<Expression>, ParseError> {
 		Ok(match self.current {
 			Token::Dot => {
 				self.expect_token_and_read(Token::Dot)?;
 
-				let field = self.expect_identifier_and_read()?.into();
+				let field: Identifier = self.expect_identifier_and_read()?.into();
 
-				Some(Expression::Get(Box::new(left), field))
+				if self.current_is(Token::LeftParen) {
+					let args = self.parse_arguments()?;
+					Some(Expression::MethodCall(Box::new(left), field, args))
+				} else {
+					if self.current_is(Token::Assign) {
+						self.expect_token_and_read(Token::Assign)?;
+						let right = self.parse_expression(Precedence::Lowest)?;
+						Some(Expression::SetProperty(Box::new(left), field, Box::new(right)))
+					} else {
+						Some(Expression::GetProperty(Box::new(left), field))
+					}
+				}
 			}
+
 			Token::LeftBracket => {
 				self.expect_token_and_read(Token::LeftBracket)?;
 
@@ -234,19 +272,7 @@ impl<'p> Parser<'p> {
 				Some(Expression::Struct(left.boxed(), fields))
 			}
 			Token::LeftParen => {
-				self.expect_token_and_read(Token::LeftParen)?;
-
-				let mut args = Vec::new();
-
-				while !self.current_is(Token::RightParen) {
-					args.push(self.parse_expression(Precedence::Lowest)?);
-
-					if self.current_is(Token::Comma) {
-						self.read();
-					}
-				}
-
-				self.expect_token_and_read(Token::RightParen)?;
+				let args = self.parse_arguments()?;
 
 				Some(Expression::Call(Box::new(left), args))
 			}
@@ -467,13 +493,30 @@ impl<'p> Parser<'p> {
 		let mut fields: Vec<Parameter> = Vec::new();
 
 		while !self.current_is(Token::RightBrace) {
-			if self.current_is(Token::Comma) {
-				self.expect_token_and_read(Token::Comma)?;
+			if self.current_is(Token::Fn) {
+				let function = self.parse_fn(true)?;
+				if let Statement::FunctionDeclaration { name, params, body } = function {
+					let closure = Expression::Closure(params.clone(), body);
+
+					fields.push(Parameter { name, initial: Some(closure) });
+				} else {
+					return Err(ParseError::UnexpectedToken(self.current.clone()));
+				}
+			} else {
+				let field: String = self.expect_identifier_and_read()?.into();
+
+				match self.current.clone() {
+					Token::Comma | Token::RightBrace | Token::Fn | Token::Identifier(..) => fields.push(Parameter { name: field, initial: None }),
+					Token::Assign => {
+						self.expect_token_and_read(Token::Assign)?;
+
+						let initial = self.parse_expression(Precedence::Lowest)?;
+
+						fields.push(Parameter { name: field, initial: Some(initial) });
+					}
+					_ => unreachable!(),
+				}
 			}
-
-			let field: String = self.expect_identifier_and_read()?.into();
-
-			fields.push(Parameter { name: field })
 		}
 
 		self.expect_token_and_read(Token::RightBrace)?;
@@ -497,7 +540,15 @@ impl<'p> Parser<'p> {
 
 			let param: String = self.expect_identifier_and_read()?.into();
 
-			params.push(Parameter { name: param })
+			if self.current_is(Token::Assign) {
+				self.expect_token_and_read(Token::Assign)?;
+
+				let initial = self.parse_expression(Precedence::Lowest)?;
+
+				params.push(Parameter { name: param, initial: Some(initial) });
+			} else {
+				params.push(Parameter { name: param, initial: None });
+			}
 		}
 
 		self.expect_token_and_read(Token::RightParen)?;
@@ -530,6 +581,7 @@ impl<'p> Parser<'p> {
 	}
 
 	fn expect_token_and_read(&mut self, token: Token) -> Result<Token, ParseError> {
+		// TODO: Replace token for optional token
 		let result = self.expect_token(token)?;
 
 		self.read();

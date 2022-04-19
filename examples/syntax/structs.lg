@@ -1,0 +1,31 @@
+struct Person {
+    name = "cleiton"
+    email
+
+    fn new(email_person) {
+        return Person { email: email_person }
+    }
+}
+
+#Console.println!(Person)
+
+create person = Person.new("lugli@test.com")
+
+Console.println!(person.name)
+
+#struct Nested {
+#    person
+#}
+
+#create nested = Nested {
+#    person: Person {
+#        name: "Lugli",
+#        email: "lugli@test.com",
+#    }
+#}
+
+#Console.println!(nested.person.name)
+
+#nested.person.name = "Cleiton"
+
+#Console.println!(nested.person.name)

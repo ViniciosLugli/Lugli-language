@@ -1,0 +1,17 @@
+create name = "Gabs"
+
+Console.println!(name.contains?("Ga"))
+Console.println!(name.startsWith?("Ga"))
+Console.println!(name.endsWith?("bs"))
+Console.println!(name.finish!(" gay"))
+Console.println!(name.append!(" gay"))
+
+struct vinicios {}
+vinicios.callback = fn(str) {
+    Console.println!("Tapped value is: " + str)
+}
+
+name.tap(vinicios.callback)
+
+Console.println!("this should be in uppercase".upper!())
+Console.println!("this should be in lowercase".lower!())

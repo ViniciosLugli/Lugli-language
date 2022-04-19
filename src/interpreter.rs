@@ -9,7 +9,10 @@ use std::{
 };
 use thiserror::Error;
 
-use crate::{ast::*, environment::*};
+use crate::{
+	ast::*,
+	environment::{self, *},
+};
 
 pub fn register_global_functions(interpreter: &mut Interpreter) {
 	for (name, function) in crate::stdlib::GlobalObject::get_all_functions() {
@@ -42,6 +45,9 @@ pub enum InterpreterResult {
 
 	#[error("")]
 	Continue,
+
+	#[error("{0}")]
+	Error(String),
 
 	#[error("Undefined variable: {0}.")]
 	UndefinedVariable(String),
@@ -113,7 +119,32 @@ impl<'i> Interpreter<'i> {
 				self.globals.insert(name.clone(), Value::Function { name, params, body, environment: None, context: None });
 			}
 			Statement::StructDeclaration { name, fields } => {
-				self.globals.insert(name.clone(), Value::Struct { name, fields, methods: Rc::new(RefCell::new(HashMap::new())) });
+				let methods: Rc<RefCell<hashbrown::HashMap<String, environment::Value>>> = Rc::new(RefCell::new(hashbrown::HashMap::new()));
+				let mut fields_filtred: Vec<Parameter> = Vec::new();
+				for field in fields.clone() {
+					match field.clone().initial {
+						Some(e) => match e {
+							Expression::Closure(params, body) => {
+								methods.borrow_mut().insert(
+									field.name.clone(),
+									Value::Function {
+										name: field.name.clone(),
+										params,
+										body,
+										environment: Some(self.environment.borrow().clone()),
+										context: None,
+									},
+								);
+							}
+							_ => {
+								fields_filtred.push(field);
+							}
+						},
+						None => fields_filtred.push(field),
+					}
+				}
+
+				self.globals.insert(name.clone(), Value::Struct { name, fields: fields_filtred, methods, propreties: None });
 			}
 			Statement::For { iterable, value, index, then } => {
 				let iterable = self.run_expression(iterable)?;
@@ -228,7 +259,7 @@ impl<'i> Interpreter<'i> {
 		})
 	}
 
-	pub fn call(&mut self, callable: Value, arguments: Vec<Value>) -> Result<Value, InterpreterResult> {
+	pub fn call(&mut self, callable: Value, arguments: ArgumentValues) -> Result<Value, InterpreterResult> {
 		Ok(match callable {
 			Value::Constant(v) => self.call(*v, arguments)?,
 			Value::NativeFunction { callback, .. } => callback(self, arguments),
@@ -237,22 +268,42 @@ impl<'i> Interpreter<'i> {
 
 				callback(self, context, arguments)?
 			}
-			Value::Function { name, params, body, environment, context } => {
-				if params.first() != Some(&Parameter { name: "this".to_string() }) && params.len() != arguments.len() {
-					return Err(InterpreterResult::TooFewArguments(name.clone(), arguments.len(), params.len()));
-				}
-
+			Value::Function { name, mut params, body, environment, context } => {
 				let old_environment = Rc::clone(&self.environment);
+
 				let new_environment =
 					if environment.is_some() { Rc::new(RefCell::new(environment.unwrap())) } else { Rc::new(RefCell::new(Environment::new())) };
 
-				if context.is_some() && params.first() == Some(&Parameter { name: "this".to_string() }) {
+				if context.is_some() && params.first() == Some(&Parameter { name: "this".to_string(), initial: None }) {
 					let context = self.run_expression(context.unwrap())?;
 					new_environment.borrow_mut().set("this", context);
+					params = params.iter().filter(|p| p.name != "this").cloned().collect();
 				}
 
-				for (Parameter { name, .. }, value) in params.into_iter().filter(|p| p.name != "this").zip(arguments) {
-					new_environment.borrow_mut().set(name, value);
+				let mut params_to_satisfy = params.clone();
+
+				for argument in arguments.clone() {
+					if argument.get_name().is_some() && params_to_satisfy.iter().any(|param| param.get_name() == argument.get_name().unwrap()) {
+						params_to_satisfy.retain(|param| param.get_name() != argument.get_name().unwrap());
+					}
+				}
+
+				let params_without_value = params_to_satisfy.iter().filter(|param| !param.has_initial()).count();
+
+				if params_without_value > arguments.len() {
+					return Err(InterpreterResult::TooFewArguments(name.clone(), arguments.len(), params_without_value));
+				}
+
+				for params_with_initial in params.iter().filter(|param| param.has_initial()) {
+					let initial = self.run_expression(params_with_initial.get_initial().unwrap())?;
+					new_environment.borrow_mut().set(params_with_initial.get_name(), initial);
+				}
+
+				for argument in arguments.clone().filter(|arg| arg.get_name().is_some()) {
+					new_environment.borrow_mut().set(argument.get_name().unwrap(), argument.get_value());
+				}
+				for (param, ArgumentValued { value, .. }) in params_to_satisfy.iter().zip(arguments.filter(|param| param.get_name().is_none())) {
+					new_environment.borrow_mut().set(param.get_name(), value);
 				}
 
 				self.environment = new_environment;
@@ -283,7 +334,7 @@ impl<'i> Interpreter<'i> {
 	}
 
 	fn run_expression(&mut self, expression: Expression) -> Result<Value, InterpreterResult> {
-		Ok(match expression {
+		Ok(match expression.clone() {
 			Expression::Number(n) => Value::Number(n),
 			Expression::String(s) => Value::String(s),
 			Expression::Bool(b) => Value::Bool(b),
@@ -310,10 +361,67 @@ impl<'i> Interpreter<'i> {
 					_ => unreachable!(),
 				}
 			}
-			Expression::Get(target, field) => {
+			Expression::MethodCall(target, field, arguments) => {
+				let instance = self.run_expression(*target.clone())?;
+				let callable = self.get_property(instance, field, *target, expression)?;
+
+				let mut arguments_value = ArgumentValues::new();
+
+				for argument in arguments.get_arguments().clone() {
+					arguments_value
+						.push_back(ArgumentValued::new(argument.get_name().clone(), self.run_expression(argument.get_expression().clone())?));
+				}
+				self.call(callable, arguments_value)?
+			}
+			Expression::GetProperty(target, field) => {
 				let instance = self.run_expression(*target.clone())?;
 
-				self.get_property(instance, field, *target)?
+				let property = self.get_property(instance, field, *target, expression)?;
+				match property {
+					Value::Function { .. } | Value::NativeFunction { .. } | Value::NativeMethod { .. } => {
+						self.call(property, ArgumentValues::new())?
+					}
+					_ => property,
+				}
+			}
+			Expression::SetProperty(target, field, value) => {
+				let instance = self.run_expression(*target.clone())?;
+				let value = self.run_expression(*value)?;
+
+				fn assign_to_instance(
+					interpreter: &mut Interpreter,
+					instance: Value,
+					field: String,
+					value: Value,
+					target: Expression,
+					expression: Expression,
+				) -> Result<(), InterpreterResult> {
+					Ok(match instance.clone() {
+						Value::StructInstance { environment, .. } => environment.borrow_mut().set(field, value.clone()),
+						Value::Struct { methods, .. } => {
+							if !matches!(value.clone(), Value::Function { .. }) {
+								return Err(InterpreterResult::InvalidMethodAssignmentTarget(instance.typestring()));
+							} else {
+								methods.borrow_mut().insert(field, value.clone());
+							}
+						}
+						Value::Constant(v) => assign_to_instance(interpreter, *v, field, value, target, expression)?,
+						_ => {
+							let callback = interpreter.get_property(instance.clone(), field.clone(), target.clone(), expression.clone())?;
+							let mut args = ArgumentValues::new();
+							args.push(ArgumentValued::new(Some(field), value));
+
+							let result = interpreter.call(callback, args)?;
+							match target.clone() {
+								Expression::Identifier(i) => interpreter.env_mut().set(i, result),
+								_ => unimplemented!(),
+							}
+						}
+					})
+				}
+
+				assign_to_instance(self, instance, field, value, *target, expression)?;
+				Value::Null
 			}
 			Expression::Infix(left, op, right) => {
 				let left = self.run_expression(*left)?;
@@ -384,14 +492,14 @@ impl<'i> Interpreter<'i> {
 				let definition = self.run_expression(*definition)?;
 
 				let (name, field_definitions, methods) = match definition.clone() {
-					Value::Struct { name, fields, methods } => (name, fields, methods),
+					Value::Struct { name, fields, methods, .. } => (name, fields, methods),
 					_ => unreachable!(),
 				};
 
 				let mut environment = Environment::new();
 
 				for (field, value) in fields {
-					if !field_definitions.contains(&Parameter { name: field.clone() }) {
+					if !field_definitions.contains(&Parameter { name: field.clone(), initial: None }) {
 						return Err(InterpreterResult::UndefinedField(name, field.clone()));
 					}
 
@@ -428,13 +536,14 @@ impl<'i> Interpreter<'i> {
 			}
 			Expression::Call(callable, arguments) => {
 				let callable = self.run_expression(*callable)?;
-				let mut argument_values: Vec<Value> = Vec::new();
 
-				for argument in arguments.into_iter() {
-					argument_values.push(self.run_expression(argument)?);
+				let mut arguments_value = ArgumentValues::new();
+
+				for argument in arguments.get_arguments().clone() {
+					arguments_value.push(ArgumentValued::new(argument.get_name().clone(), self.run_expression(argument.get_expression().clone())?));
 				}
 
-				self.call(callable, argument_values)?
+				self.call(callable, arguments_value)?
 			}
 			Expression::Prefix(op, right) => {
 				let right = self.run_expression(*right)?;
@@ -477,23 +586,6 @@ impl<'i> Interpreter<'i> {
 			Expression::Assign(target, value) => {
 				let value = self.run_expression(*value)?;
 
-				fn assign_to_instance(instance: Value, field: String, value: Value) -> Result<(), InterpreterResult> {
-					Ok(match instance.clone() {
-						// TODO: Check if the field exists on the definition before
-						// actually doing the assignment.
-						Value::StructInstance { environment, .. } => environment.borrow_mut().set(field, value.clone()),
-						Value::Struct { methods, .. } => {
-							if !matches!(value.clone(), Value::Function { .. }) {
-								return Err(InterpreterResult::InvalidMethodAssignmentTarget(instance.typestring()));
-							} else {
-								methods.borrow_mut().insert(field, value.clone());
-							}
-						}
-						Value::Constant(v) => assign_to_instance(*v, field, value)?,
-						_ => return Err(InterpreterResult::InvalidMethodAssignmentTarget(instance.typestring())),
-					})
-				}
-
 				fn assign_to_list(
 					interpreter: &mut Interpreter,
 					instance: Value,
@@ -520,11 +612,7 @@ impl<'i> Interpreter<'i> {
 
 						assign_to_list(self, instance, index, value.clone())?;
 					}
-					Expression::Get(instance, field) => {
-						let instance = self.run_expression(*instance)?;
 
-						assign_to_instance(instance, field, value.clone())?;
-					}
 					_ => {
 						match self.run_expression(*target.clone())? {
 							Value::Constant(_) => return Err(InterpreterResult::CannotAssignValueToConstant),
@@ -559,7 +647,10 @@ impl<'i> Interpreter<'i> {
 	fn define_global_struct(&mut self, struct_name: impl Into<String>, methods: HashMap<String, Value>) {
 		let struct_name = struct_name.into();
 
-		self.globals.insert(struct_name.clone(), Value::Struct { name: struct_name, methods: Rc::new(RefCell::new(methods)), fields: vec![] });
+		self.globals.insert(
+			struct_name.clone(),
+			Value::Struct { name: struct_name, methods: Rc::new(RefCell::new(methods)), fields: vec![], propreties: None },
+		);
 	}
 
 	fn env(&self) -> Ref<Environment> {
@@ -570,15 +661,42 @@ impl<'i> Interpreter<'i> {
 		RefCell::borrow_mut(&self.environment)
 	}
 
-	fn get_property(&mut self, value: Value, field: String, target: Expression) -> Result<Value, InterpreterResult> {
+	fn get_property(&mut self, value: Value, field: String, target: Expression, expression: Expression) -> Result<Value, InterpreterResult> {
 		Ok(match value {
 			Value::StructInstance { environment, definition, .. } => {
 				if let Some(value) = environment.borrow().get(field.clone()) {
 					match value {
+						Value::Function { name, params, body, environment, .. } => match expression.clone() {
+							Expression::MethodCall(..) => Value::Function { name, params, body, environment, context: Some(target) },
+							_ => {
+								if let Expression::Identifier(i) = target {
+									return Err(InterpreterResult::UndefinedField(i, field));
+								} else {
+									return Err(InterpreterResult::UndefinedField("None".to_string(), field));
+								}
+							}
+						},
+						_ => match expression.clone() {
+							Expression::GetProperty(..) => value,
+							_ => {
+								if let Expression::Identifier(i) = target {
+									return Err(InterpreterResult::UndefinedField(i, field));
+								} else {
+									return Err(InterpreterResult::UndefinedField("None".to_string(), field));
+								}
+							}
+						},
+					}
+				} else if let Some(value) = match *definition.clone() {
+					Value::Struct { fields, .. } => fields.iter().find(|p| p.name == field).map(|p| p.get_initial().clone()).unwrap_or_else(|| None),
+					_ => None,
+				} {
+					let initial = self.run_expression(value)?;
+					match initial {
 						Value::Function { name, params, body, environment, .. } => {
 							Value::Function { name, params, body, environment, context: Some(target) }
 						}
-						_ => value,
+						_ => initial,
 					}
 				} else {
 					let name = match *definition {
@@ -589,18 +707,54 @@ impl<'i> Interpreter<'i> {
 					return Err(InterpreterResult::UndefinedField(name, field));
 				}
 			}
-			Value::Struct { name, methods, .. } => {
+			Value::Struct { name, methods, fields, .. } => {
 				if let Some(value) = methods.borrow().get(&field.clone()) {
 					value.clone()
+				} else if let Some(value) = fields.iter().find(|p| p.name == field).map(|p| p.get_initial().clone()).unwrap_or_else(|| None) {
+					let initial = self.run_expression(value)?;
+
+					match initial {
+						Value::Function { name, params, body, environment, .. } => {
+							Value::Function { name, params, body, environment, context: Some(target) }
+						}
+						_ => initial,
+					}
 				} else {
 					return Err(InterpreterResult::UndefinedMethod(name, field));
 				}
 			}
-			Value::String(..) => Value::NativeMethod { name: field.clone(), callback: crate::stdlib::StringObject::get(field), context: target },
-			Value::Number(..) => Value::NativeMethod { name: field.clone(), callback: crate::stdlib::NumberObject::get(field), context: target },
-			Value::List(..) => Value::NativeMethod { name: field.clone(), callback: crate::stdlib::ListObject::get(field), context: target },
-			Value::DateTime(..) => Value::NativeMethod { name: field.clone(), callback: crate::stdlib::DateTimeObject::get(field), context: target },
-			Value::Constant(v) => self.get_property(*v, field, target)?,
+			Value::String(..) => match expression {
+				Expression::MethodCall(..) => {
+					Value::NativeMethod { name: field.clone(), callback: crate::stdlib::StringObject::get(field), context: target }
+				}
+				_ => todo!(),
+			},
+			Value::Number(..) => match expression {
+				Expression::MethodCall(..) => {
+					Value::NativeMethod { name: field.clone(), callback: crate::stdlib::NumberObject::get(field), context: target }
+				}
+				_ => todo!(),
+			},
+			Value::List(..) => match expression {
+				Expression::MethodCall(..) => {
+					Value::NativeMethod { name: field.clone(), callback: crate::stdlib::ListObject::get(field), context: target }
+				}
+				_ => todo!(),
+			},
+			Value::Constant(v) => self.get_property(*v, field, target, expression)?,
+			Value::DateTime(..) => match expression {
+				// TODO: Remake origin of stdlib objects
+				Expression::GetProperty(..) => {
+					Value::NativeMethod { name: field.clone(), callback: crate::stdlib::DateTimeObject::getter_property(field), context: target }
+				}
+				Expression::SetProperty(..) => {
+					Value::NativeMethod { name: field.clone(), callback: crate::stdlib::DateTimeObject::setter_property(field), context: target }
+				}
+				Expression::MethodCall(..) => {
+					Value::NativeMethod { name: field.clone(), callback: crate::stdlib::DateTimeObject::get_method(field), context: target }
+				}
+				_ => todo!(),
+			},
 			_ => todo!(),
 		})
 	}

@@ -1,5 +1,7 @@
 use hashbrown::HashMap;
 
+use self::structs::console;
+
 use super::arity;
 use crate::environment::{NativeFunctionCallback, Value};
 
@@ -26,6 +28,7 @@ impl GlobalObject {
 		console_methods.insert("print!".to_string(), Value::NativeFunction { name: "print!".to_string(), callback: structs::console::print });
 		console_methods.insert("println!".to_string(), Value::NativeFunction { name: "println!".to_string(), callback: structs::console::println });
 		console_methods.insert("input!".to_string(), Value::NativeFunction { name: "input!".to_string(), callback: structs::console::input });
+		console_methods.insert("clear!".to_string(), Value::NativeFunction { name: "clear!".to_string(), callback: structs::console::clear });
 		global_struct.insert("Console".to_string(), console_methods);
 
 		let mut time_methods = HashMap::<String, Value>::new();
@@ -40,23 +43,24 @@ impl GlobalObject {
 
 mod functions {
 	use super::arity;
+	use crate::ast::ArgumentValues;
 	use crate::parser::parse;
 	use crate::token::generate;
 
 	use crate::{environment::Value, interpreter::Interpreter};
 
-	pub fn global_type(_: &mut Interpreter, args: Vec<Value>) -> Value {
+	pub fn global_type(_: &mut Interpreter, args: ArgumentValues) -> Value {
 		arity("type!", 1, &args, false);
 
-		let arg = args.first().unwrap();
+		let arg = args.get_from_name_or_index("value".to_string(), 0).unwrap();
 
 		Value::String(arg.clone().typestring())
 	}
 
-	pub fn global_import(interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
+	pub fn global_import(interpreter: &mut Interpreter, args: ArgumentValues) -> Value {
 		arity("import!", 1, &args, false);
 
-		let path = args.first().unwrap().clone().to_string();
+		let path = args.get_from_name_or_index("path".to_string(), 0).unwrap().to_string();
 		let directory = interpreter.path().parent().unwrap().to_path_buf();
 
 		let mut module_path = directory.clone();
@@ -95,45 +99,49 @@ mod functions {
 mod structs {
 	use super::arity;
 	pub mod application {
-		use crate::{environment::Value, interpreter::Interpreter};
+		use crate::{ast::ArgumentValues, environment::Value, interpreter::Interpreter};
 
-		pub fn exit(_interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
+		pub fn exit(_interpreter: &mut Interpreter, args: ArgumentValues) -> Value {
 			// arity("exit!", 0, &args, false); TODO: Implement arity with optional arguments
 
-			std::process::exit(if args.is_empty() { 0 } else { args.get(0).unwrap().clone().to_number() as i32 });
+			std::process::exit(if args.is_empty() {
+				0
+			} else {
+				args.get_from_name_or_index("code".to_string(), 0).unwrap().clone().to_number() as i32
+			});
 		}
 	}
 
 	pub mod console {
 		use super::arity;
-		use crate::{environment::Value, interpreter::Interpreter};
+		use crate::{ast::ArgumentValues, environment::Value, interpreter::Interpreter};
 		use std::io::{stdout, Write};
 
-		pub fn println(_: &mut Interpreter, args: Vec<Value>) -> Value {
+		pub fn println(_: &mut Interpreter, args: ArgumentValues) -> Value {
 			arity("println!", 1, &args, true);
 
-			let arg = args.get(0).unwrap().clone();
+			let content = args.get_from_name_or_index("content".to_string(), 0).unwrap().to_string();
 			let mut stdout = stdout();
 
-			stdout.write(format!("{}\n", arg.to_string()).as_bytes()).unwrap();
+			stdout.write(format!("{}\n", content).as_bytes()).unwrap();
 			stdout.flush().unwrap();
 
 			Value::Null
 		}
 
-		pub fn print(_: &mut Interpreter, args: Vec<Value>) -> Value {
+		pub fn print(_: &mut Interpreter, args: ArgumentValues) -> Value {
 			arity("print!", 1, &args, true);
 
-			let arg = args.get(0).unwrap().clone();
+			let content = args.get_from_name_or_index("content".to_string(), 0).unwrap().to_string();
 			let mut stdout = stdout();
 
-			stdout.write(arg.to_string().as_bytes()).unwrap();
+			stdout.write(content.as_bytes()).unwrap();
 			stdout.flush().unwrap();
 
 			Value::Null
 		}
 
-		pub fn input(_interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
+		pub fn input(_interpreter: &mut Interpreter, args: ArgumentValues) -> Value {
 			arity("input!", 0, &args, false);
 
 			let mut input = String::new();
@@ -142,30 +150,41 @@ mod structs {
 
 			Value::String(input)
 		}
+
+		pub fn clear(_interpreter: &mut Interpreter, args: ArgumentValues) -> Value {
+			arity("clear!", 0, &args, false);
+
+			let mut stdout = stdout();
+
+			stdout.write(b"\x1b[2J").unwrap();
+			stdout.flush().unwrap();
+
+			Value::Null
+		}
 	}
 
 	pub mod time {
 		use super::arity;
-		use crate::{environment::Value, interpreter::Interpreter};
-		use chrono::{Datelike, Timelike, Utc};
+		use crate::{ast::ArgumentValues, environment::Value, interpreter::Interpreter};
+		use chrono::Utc;
 
-		pub fn sleep(_interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
+		pub fn sleep(_interpreter: &mut Interpreter, args: ArgumentValues) -> Value {
 			arity("sleep!", 1, &args, false);
 
-			let arg = args.get(0).unwrap().clone();
+			let duration = args.get_from_name("duration".to_string()).unwrap().to_number();
 
-			std::thread::sleep(std::time::Duration::from_millis(arg.to_number() as u64));
+			std::thread::sleep(std::time::Duration::from_millis(duration as u64));
 
 			Value::Null
 		}
 
-		pub fn now(_interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
+		pub fn now(_interpreter: &mut Interpreter, args: ArgumentValues) -> Value {
 			arity("now?", 0, &args, false);
 
 			Value::Number(Utc::now().timestamp() as f64)
 		}
 
-		pub fn datetime(_interpreter: &mut Interpreter, args: Vec<Value>) -> Value {
+		pub fn datetime(_interpreter: &mut Interpreter, args: ArgumentValues) -> Value {
 			arity("datetime?", 0, &args, false);
 
 			Value::DateTime(chrono::offset::Utc::now())
