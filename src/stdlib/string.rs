@@ -17,7 +17,6 @@ impl StringObject {
 			"tap" => string_tap,
 			"upper!" => string_to_upper,
 			"lower!" => string_to_lower,
-			"length?" => string_length,
 			_ => panic!("Undefined method: `{}` for String object", name),
 		}
 	}
@@ -116,10 +115,4 @@ fn string_to_lower(_: &mut Interpreter, context: Value, args: ArgumentValues) ->
 	super::arity("String.lower!", 0, &args, false);
 
 	Ok(Value::String(context.to_string().to_lowercase()))
-}
-
-fn string_length(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
-	super::arity("String.length?", 0, &args, false);
-
-	Ok(Value::Number(context.to_string().len() as f64))
 }

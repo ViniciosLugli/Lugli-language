@@ -19,7 +19,6 @@ impl ListObject {
 			"each!" => list_each,
 			"map!" => list_map,
 			"first!" => list_first,
-			"push!" => list_push,
 			_ => panic!("Undefined method: {} for List Object", name),
 		}
 	}
@@ -136,15 +135,4 @@ fn list_first(interpreter: &mut Interpreter, context: Value, args: ArgumentValue
 	}
 
 	Ok(list.first().unwrap().clone())
-}
-
-fn list_push(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
-	super::arity("List.push!()", 1, &args, false);
-
-	let mut list = context.clone().to_vec().borrow().clone();
-	let new_item = args.get_from_name_or_index("item".to_string(), 0).unwrap();
-
-	list.push(new_item);
-
-	Ok(Value::Mutable(Box::new(Value::List(Rc::new(RefCell::new(list))))))
 }

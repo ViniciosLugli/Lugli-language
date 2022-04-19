@@ -3,34 +3,15 @@ struct Objetive {
 	founded = []
 
 	fn new(word) {
-		create obj = Objetive { word: word }
-		create a = [1]
-		for item in obj.word {
-			a.push!(item)
-		}
-
-		Console.println!(a)
-
-		return obj
+		return Objetive { word: word }
 	}
 
 	fn check_letter(this, letter){
-		if this.word.contains?(letter) {
-			this.founded.push!(letter)
-			return true
-		}
-		return false
-	}
-
-	fn get_current_completed_letters(this) {
-
+		#Console.println!(letter)
+		return this.word.contains?(letter)
 	}
 }
 
-#create a = [2]
-#a.push!("b")
-#Console.println!(a)
-
 create objetive = Objetive.new("vinicios")
 
-Console.println!(objetive.check_letter)
+Console.println!(objetive.check_letter("i"))
