@@ -12,13 +12,13 @@ impl ListObject {
 	pub fn get(name: String) -> NativeMethodCallback {
 		match name.as_str() {
 			"empty?" => list_is_empty,
-			"notEmpty?" => list_is_not_empty,
 			"reverse!" => list_reverse,
 			"join!" => list_join,
 			"filter!" => list_filter,
 			"each!" => list_each,
 			"map!" => list_map,
 			"first!" => list_first,
+			"push!" => list_push,
 			_ => panic!("Undefined method: {} for List Object", name),
 		}
 	}
@@ -30,19 +30,12 @@ fn list_is_empty(_: &mut Interpreter, context: Value, args: ArgumentValues) -> R
 	Ok(Value::Bool(context.to_vec().borrow().is_empty()))
 }
 
-fn list_is_not_empty(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
-	super::arity("List.notEmpty?()", 0, &args, false);
-
-	Ok(Value::Bool(!context.to_vec().borrow().is_empty()))
-}
-
 fn list_reverse(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
 	super::arity("List.reverse!()", 0, &args, false);
 
-	let mut list = context.to_vec().borrow().clone();
-	list.reverse();
+	context.to_vec().borrow_mut().reverse();
 
-	Ok(Value::List(Rc::new(RefCell::new(list))))
+	Ok(Value::Null)
 }
 
 fn list_join(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
@@ -135,4 +128,14 @@ fn list_first(interpreter: &mut Interpreter, context: Value, args: ArgumentValue
 	}
 
 	Ok(list.first().unwrap().clone())
+}
+
+fn list_push(_: &mut Interpreter, context: Value, args: ArgumentValues) -> Result<Value, InterpreterResult> {
+	super::arity("List.push!()", 1, &args, false);
+
+	let list = context.to_vec();
+
+	list.borrow_mut().push(args.get_from_name_or_index("value".to_string(), 0).unwrap().clone());
+
+	Ok(Value::Null)
 }

@@ -15,7 +15,7 @@ fn main() {
 	let matches = App::new("Lugli")
 		.version(VERSION)
 		.author("Vinicios Lugli <vinicioslugli@gmail.com>")
-		.about("My 'lugli' language compiler for learning purposes.")
+		.about("My 'lugli' language interpreter for learning purposes.")
 		.subcommand(App::new("run").about("Run a Lugli file.").version(VERSION).arg(Arg::new("file").required(true)))
 		.get_matches();
 
