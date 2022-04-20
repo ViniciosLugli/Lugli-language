@@ -363,7 +363,7 @@ impl<'i> Interpreter<'i> {
 			}
 			Expression::MethodCall(target, field, arguments) => {
 				let instance = self.run_expression(*target.clone())?;
-				let callable = self.get_property(instance, field, *target, expression)?;
+				let callable = self.get_property(instance.clone(), field.clone(), *target.clone(), expression.clone())?;
 
 				let mut arguments_value = ArgumentValues::new();
 
@@ -376,13 +376,7 @@ impl<'i> Interpreter<'i> {
 			Expression::GetProperty(target, field) => {
 				let instance = self.run_expression(*target.clone())?;
 
-				let property = self.get_property(instance, field, *target, expression)?;
-				match property {
-					Value::Function { .. } | Value::NativeFunction { .. } | Value::NativeMethod { .. } => {
-						self.call(property, ArgumentValues::new())?
-					}
-					_ => property,
-				}
+				self.get_property(instance, field, *target, expression)?
 			}
 			Expression::SetProperty(target, field, value) => {
 				let instance = self.run_expression(*target.clone())?;
@@ -498,8 +492,14 @@ impl<'i> Interpreter<'i> {
 
 				let mut environment = Environment::new();
 
+				for parameter in field_definitions.iter().find(|param| param.has_initial()) {
+					let value = self.run_expression(parameter.get_initial().unwrap())?;
+
+					environment.set(parameter.get_name(), value);
+				}
+
 				for (field, value) in fields {
-					if !field_definitions.contains(&Parameter { name: field.clone(), initial: None }) {
+					if !field_definitions.iter().any(|f| f.name == field) {
 						return Err(InterpreterResult::UndefinedField(name, field.clone()));
 					}
 
@@ -509,9 +509,6 @@ impl<'i> Interpreter<'i> {
 						field,
 						match value {
 							Value::StructInstance { environment, definition } => {
-								// This logic is needed to ensure that any nested structs
-								// that receive modifications do not apply the same side-effect
-								// to the original reference.
 								let environment = environment.borrow().clone();
 
 								Value::StructInstance { definition, environment: Rc::new(RefCell::new(environment)) }
