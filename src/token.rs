@@ -1,29 +1,34 @@
-use logos::{Lexer, Logos};
+use logos::Logos;
 
 pub fn generate(input: &str) -> Vec<Token> {
 	Token::lexer(input).collect()
 }
 
-fn to_string(lex: &mut Lexer<Token>) -> Option<String> {
-	let mut string: String = lex.slice().to_string();
+mod parser {
+	use super::Token;
+	use logos::Lexer;
 
-	if string.starts_with("$") {
-		string.remove(0);
+	pub fn to_string(lex: &mut Lexer<Token>) -> Option<String> {
+		let mut string: String = lex.slice().to_string();
+
+		if string.starts_with("$") {
+			string.remove(0);
+		}
+
+		if string.starts_with("\"") {
+			string.remove(0);
+		}
+
+		if string.ends_with('"') {
+			string.remove(string.len() - 1);
+		}
+
+		Some(string)
 	}
 
-	if string.starts_with("\"") {
-		string.remove(0);
+	pub fn to_float(lex: &mut Lexer<Token>) -> Option<f64> {
+		Some(lex.slice().parse().ok()?)
 	}
-
-	if string.ends_with('"') {
-		string.remove(string.len() - 1);
-	}
-
-	Some(string)
-}
-
-fn to_float(lex: &mut Lexer<Token>) -> Option<f64> {
-	Some(lex.slice().parse().ok()?)
 }
 
 #[derive(Debug, Clone, Logos, PartialEq)]
@@ -73,12 +78,12 @@ pub enum Token {
 	#[token("not in")]
 	NotIn,
 
-	#[regex(r"[a-zA-Z_?!]+", to_string)]
+	#[regex(r"[a-zA-Z_?!]+", parser::to_string)]
 	Identifier(String),
 
-	#[regex(r"([0-9]+[.])?[0-9]+", to_float)]
+	#[regex(r"([0-9]+[.])?[0-9]+", parser::to_float)]
 	Number(f64),
-	#[regex(r##""(?:[^"\\]|\\.)*""##, to_string)]
+	#[regex(r##""(?:[^"\\]|\\.)*""##, parser::to_string)]
 	String(String),
 
 	#[token("(")]
@@ -180,7 +185,7 @@ mod tests {
 	use super::*;
 	#[test]
 	fn it_can_skip_comments() {
-		let mut lexer = Token::lexer("-- foo");
+		let mut lexer = Token::lexer("# foo");
 		assert_eq!(lexer.next(), None);
 	}
 
@@ -232,12 +237,12 @@ mod tests {
 
 	#[test]
 	fn it_can_recognise_identifiers() {
-		let mut lexer = Token::lexer("hello_world HelloWorld hello_world? helloWorld");
+		let mut lexer = Token::lexer("hello_world HelloWorld hello_world? helloWorld!");
 
 		assert_eq!(lexer.next(), Some(Token::Identifier("hello_world".to_owned())));
 		assert_eq!(lexer.next(), Some(Token::Identifier("HelloWorld".to_owned())));
 		assert_eq!(lexer.next(), Some(Token::Identifier("hello_world?".to_owned())));
-		assert_eq!(lexer.next(), Some(Token::Identifier("helloWorld".to_owned())));
+		assert_eq!(lexer.next(), Some(Token::Identifier("helloWorld!".to_owned())));
 	}
 
 	#[test]

@@ -5,19 +5,22 @@ use thiserror::Error;
 
 use crate::{ast::ConditionBlock, ast::*, token::Token};
 
-pub fn parse(tokens: Vec<Token>) -> Result<Program, ParseError> {
-	let mut parser = Parser::new(tokens.iter());
+mod bindings {
+	use super::*;
+	pub pub fn parse(tokens: Vec<Token>) -> Result<Program, ParseError> {
+		let mut parser = Parser::new(tokens.iter());
 
-	parser.read();
-	parser.read();
+		parser.read();
+		parser.read();
 
-	let mut program: Program = Vec::new();
+		let mut program: Program = Vec::new();
 
-	while let Some(statement) = parser.next()? {
-		program.push(statement);
+		while let Some(statement) = parser.next()? {
+			program.push(statement);
+		}
+
+		Ok(program)
 	}
-
-	Ok(program)
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
