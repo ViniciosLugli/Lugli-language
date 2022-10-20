@@ -21,7 +21,7 @@ pub enum Statement {
 	FunctionDeclaration { name: Identifier, params: Vec<Parameter>, body: Block },
 	StructDeclaration { name: Identifier, fields: Vec<Parameter> },
 	CreateDeclaration { name: Identifier, initial: Option<Expression> },
-	ConstDeclaration { name: Identifier, initial: Expression },
+	ConstDeclaration { name: Identifier, value: Expression },
 	If { condition: ConditionBlock, others_conditions: Option<Vec<ConditionBlock>>, otherwise: Option<Block> },
 	For { iterable: Expression, value: Identifier, index: Option<Identifier>, then: Block },
 	While { condition: ConditionBlock },
@@ -163,25 +163,6 @@ impl Argument {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct CallArguments {
-	arguments: Vec<Argument>,
-}
-
-impl CallArguments {
-	pub fn new() -> Self {
-		Self { arguments: Vec::new() }
-	}
-
-	pub fn add_argument(&mut self, argument: Argument) {
-		self.arguments.push(argument);
-	}
-
-	pub fn get_arguments(&self) -> &Vec<Argument> {
-		&self.arguments
-	}
-}
-
-#[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
 	Number(f64),
 	String(String),
@@ -192,10 +173,10 @@ pub enum Expression {
 	MathAssign(Box<Expression>, Op, Box<Expression>),
 	Infix(Box<Expression>, Op, Box<Expression>),
 	Prefix(Op, Box<Expression>),
-	Call(Box<Expression>, CallArguments),
+	Call(Box<Expression>, Vec<Argument>),
 	Struct(Box<Expression>, HashMap<Identifier, Expression>),
 	Closure(Vec<Parameter>, Vec<Statement>),
-	MethodCall(Box<Expression>, Identifier, CallArguments),
+	MethodCall(Box<Expression>, Identifier, Vec<Argument>),
 	GetProperty(Box<Expression>, Identifier),
 	SetProperty(Box<Expression>, Identifier, Box<Expression>),
 	Index(Box<Expression>, Option<Box<Expression>>),

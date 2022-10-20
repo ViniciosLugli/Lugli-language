@@ -110,8 +110,8 @@ impl<'i> Interpreter<'i> {
 					self.env_mut().set(name, value)
 				}
 			}
-			Statement::ConstDeclaration { name, initial } => {
-				let value = Value::Constant(Box::new(self.run_expression(initial)?));
+			Statement::ConstDeclaration { name, value } => {
+				let value = Value::Constant(Box::new(self.run_expression(value)?));
 
 				self.env_mut().set(name, value)
 			}

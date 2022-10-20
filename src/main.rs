@@ -2,11 +2,12 @@
 use clap::{App, Arg};
 use std::fs::read_to_string;
 
-//mod ast;
-//mod environment;
-//mod interpreter;
-//mod parser;
-//mod stdlib;
+mod ast;
+mod environment;
+mod interpreter;
+mod parser;
+mod parser;
+mod stdlib;
 mod token;
 
 const VERSION: &str = "0.3-beta";

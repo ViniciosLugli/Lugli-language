@@ -7,19 +7,22 @@ use crate::{ast::ConditionBlock, ast::*, token::Token};
 
 mod bindings {
 	use super::*;
-	pub pub fn parse(tokens: Vec<Token>) -> Result<Program, ParseError> {
-		let mut parser = Parser::new(tokens.iter());
 
-		parser.read();
-		parser.read();
+	pub fn parse(tokens: Vec<Token>) -> Result<Program, ParseError> {
+		let mut parser = Parser::new(tokens.iter()); // lex tokens
 
+		parser.read(); // prime parse cursor
+		parser.read(); // prime parse cursor
+
+		// Store program
 		let mut program: Program = Vec::new();
 
+		// Parse until end of tokens
 		while let Some(statement) = parser.next()? {
-			program.push(statement);
+			program.push(statement); // add statement to program
 		}
 
-		Ok(program)
+		Ok(program) // pass the program
 	}
 }
 
@@ -98,24 +101,39 @@ impl<'p> Parser<'p> {
 	}
 
 	fn parse_for(&mut self) -> Result<Statement, ParseError> {
-		self.expect_token_and_read(Token::For)?;
+		self.expect_token_and_read(Token::For)?; // skip 'for'
 
+		// Store identifier
 		let (index, value) = if self.current_is(Token::LeftParen) {
-			self.expect_token_and_read(Token::LeftParen)?;
+			self.expect_token_and_read(Token::LeftParen)?; // Skip '('
+
+			// Get index
 			let index = self.expect_identifier_and_read()?;
+
+			// Skip ','
 			self.expect_token_and_read(Token::Comma)?;
+
+			// Get value and the indentifying list of identifiers
 			let tuple = (Some(index.into()), self.expect_identifier_and_read()?.into());
+
+			// Skip ')'
 			self.expect_token_and_read(Token::RightParen)?;
-			tuple
+
+			tuple // Store tuple
 		} else {
+			// Get value of loop identifiers, as there are no indexes
 			(None, self.expect_identifier_and_read()?.into())
 		};
 
-		self.expect_token_and_read(Token::In)?;
+		self.expect_token_and_read(Token::In)?; // Skip 'in'
 
+		// Initialize all literals and expression together
 		let iterable = self.parse_expression(Precedence::Statement)?;
+
+		// Get expression for loop function
 		let then = self.parse_block()?;
 
+		// Return a For statement
 		Ok(Statement::For { index, value, iterable, then })
 	}
 
@@ -191,30 +209,37 @@ impl<'p> Parser<'p> {
 		Ok(left)
 	}
 
-	fn parse_arguments(&mut self) -> Result<CallArguments, ParseError> {
-		self.expect_token_and_read(Token::LeftParen)?;
+	fn parse_arguments(&mut self) -> Result<Vec<Argument>, ParseError> {
+		self.expect_token_and_read(Token::LeftParen)?; // Skip '('
 
-		let mut args: CallArguments = CallArguments::new();
+		// Initialize arguments list
+		let mut args: Vec<Argument> = Vec::new();
 
+		// While not at right parenthesis, continue parsing arguments
 		while !self.current_is(Token::RightParen) {
+			// Parse argument
 			let expression = self.parse_expression(Precedence::Lowest)?;
 
+			// Read arguments expression and check if it is the result of an argument unpacking
 			match expression {
+				// If the result of the expression have the assignment token, set the argument name accordingly
 				Expression::Assign(param, value) => match *param {
-					Expression::Identifier(name) => args.add_argument(Argument::new(Some(name), *value)),
-					_ => return Err(ParseError::UnexpectedToken(self.current.clone())),
+					// Push the unpack expression into the list of arguments, as an unpack argument
+					Expression::Identifier(name) => args.push(Argument::new(Some(name), *value)),
+					_ => return Err(ParseError::UnexpectedToken(self.current.clone())), // Return unexpected token error
 				},
-				_ => args.add_argument(Argument::new(None, expression)),
+				_ => args.push(Argument::new(None, expression)), // Push argument into list, as a normal argument
 			};
 
+			// Check if there is a comma
 			if self.current_is(Token::Comma) {
-				self.expect_token_and_read(Token::Comma)?;
+				self.expect_token_and_read(Token::Comma)?; // Skip comma
 			}
 		}
 
-		self.expect_token_and_read(Token::RightParen)?;
+		self.expect_token_and_read(Token::RightParen)?; // Skip ')'
 
-		Ok(args)
+		Ok(args) // Return argument list
 	}
 
 	fn parse_postfix_expression(&mut self, left: Expression) -> Result<Option<Expression>, ParseError> {
@@ -365,125 +390,142 @@ impl<'p> Parser<'p> {
 		})
 	}
 
-	fn parse_if(&mut self) -> Result<Statement, ParseError> {
-		self.expect_token_and_read(Token::If)?;
-
-		let condition_if;
+	fn parse_condition(&mut self, require_block: bool) -> Result<Expression, ParseError> {
+		let condition;
 
 		if self.current_is(Token::LeftParen) {
-			self.expect_token_and_read(Token::LeftParen)?;
-			condition_if = self.parse_expression(Precedence::Lowest)?;
-			self.expect_token_and_read(Token::RightParen)?;
+			// If current token is "("
+			self.expect_token_and_read(Token::LeftParen)?; // Skip "("
+			condition = self.parse_expression(Precedence::Lowest)?;
+			self.expect_token_and_read(Token::RightParen)?; // Skip ")"
+		} else if require_block {
+			return Err(ParseError::UnexpectedToken(self.current.clone()));
 		} else {
-			condition_if = self.parse_expression(Precedence::Statement)?;
+			condition = self.parse_expression(Precedence::Statement)?; // Parse the condition
 		}
 
+		Ok(condition)
+	}
+
+	fn parse_if(&mut self) -> Result<Statement, ParseError> {
+		self.expect_token_and_read(Token::If)?; // Skip "if"
+
+		// Store condition
+		let condition_if = self.parse_condition(false)?;
+
+		// Parse the next block and add as the body
 		let then_if = self.parse_block()?;
 
+		// Parse "else if"
 		let others_conditions = if self.current_is(Token::ElseIf) {
-			let mut others_conditions: Vec<ConditionBlock> = Vec::new();
+			let mut others_conditions: Vec<ConditionBlock> = Vec::new(); // The list of part after else if
 
+			// While is else if
 			while self.current_is(Token::ElseIf) {
-				self.expect_token_and_read(Token::ElseIf)?;
+				self.expect_token_and_read(Token::ElseIf)?; // Skip "else if"
 
-				let condition_else_if;
+				// The else if conditions
+				let condition_else_if = self.parse_condition(false)?;
 
-				if self.current_is(Token::LeftParen) {
-					self.expect_token_and_read(Token::LeftParen)?;
-					condition_else_if = self.parse_expression(Precedence::Lowest)?;
-					self.expect_token_and_read(Token::RightParen)?;
-				} else {
-					condition_else_if = self.parse_expression(Precedence::Statement)?;
-				}
+				// Parse the next block and add as the body
 				others_conditions.push(ConditionBlock { expression: condition_else_if, then: self.parse_block()? });
 			}
 
-			Some(others_conditions)
+			Some(others_conditions) // Push expr to the vec
 		} else {
 			None
 		};
 
+		// Parse "else"
 		let otherwise = if self.current_is(Token::Else) {
-			self.expect_token_and_read(Token::Else)?;
-			Some(self.parse_block()?)
+			self.expect_token_and_read(Token::Else)?; // Skip "else"
+			Some(self.parse_block()?) // Parse the next block as the Other Wise block
 		} else {
 			None
 		};
 
+		// Return if as a statement
 		Ok(Statement::If { condition: ConditionBlock { expression: condition_if, then: then_if }, others_conditions, otherwise })
 	}
 
 	fn parse_while(&mut self) -> Result<Statement, ParseError> {
-		self.expect_token_and_read(Token::While)?;
+		self.expect_token_and_read(Token::While)?; // Skip "while"
 
-		let condition = if self.current_is(Token::LeftParen) {
-			self.expect_token_and_read(Token::LeftParen)?;
-			let condition = self.parse_expression(Precedence::Statement)?;
-			self.expect_token_and_read(Token::RightParen)?;
-			condition
-		} else {
-			self.parse_expression(Precedence::Statement)?
-		};
+		let condition = self.parse_condition(false)?;
 
-		let then = self.parse_block()?;
+		let then = self.parse_block()?; // Parse the next block and set it as "then"
 
+		// Return the while as a statement
 		Ok(Statement::While { condition: ConditionBlock { expression: condition, then } })
 	}
 
 	fn parse_loop(&mut self) -> Result<Statement, ParseError> {
-		self.expect_token_and_read(Token::Loop)?;
+		self.expect_token_and_read(Token::Loop)?; // Skip "loop"
 
-		let then = self.parse_block()?;
+		let then = self.parse_block()?; // Parse the next block and set it as "then"
 
+		// Return the while as a statement
 		Ok(Statement::Loop { body: then })
 	}
 
 	fn parse_return(&mut self) -> Result<Statement, ParseError> {
-		self.expect_token_and_read(Token::Return)?;
+		self.expect_token_and_read(Token::Return)?; // Skip "return"
 
+		// Get the expression after return
 		if let Ok(expression) = self.parse_expression(Precedence::Lowest) {
+			// Return the return statement with the next expression.
 			Ok(Statement::Return { value: expression })
 		} else {
+			// return the void return statement.
 			Ok(Statement::Return { value: Expression::Null })
 		}
 	}
 
 	fn parse_break(&mut self) -> Result<Statement, ParseError> {
-		self.expect_token_and_read(Token::Break)?;
+		self.expect_token_and_read(Token::Break)?; // Skip "break"
 
-		Ok(Statement::Break)
+		Ok(Statement::Break) // return break as Statement
 	}
 
 	fn parse_continue(&mut self) -> Result<Statement, ParseError> {
-		self.expect_token_and_read(Token::Continue)?;
+		self.expect_token_and_read(Token::Continue)?; // Skip "continue"
 
-		Ok(Statement::Continue)
+		Ok(Statement::Continue) // Return continue as Statement
 	}
 
 	fn parse_create(&mut self) -> Result<Statement, ParseError> {
-		self.expect_token_and_read(Token::Create)?;
+		self.expect_token_and_read(Token::Create)?; // Skip "create"
 
+		// Get the object name
 		let name: Identifier = self.expect_identifier_and_read()?.into();
-		let initial: Option<Expression> = if self.current_is(Token::Assign) {
-			self.expect_token_and_read(Token::Assign)?;
 
-			Some(self.parse_expression(Precedence::Lowest)?)
+		// Check if the next token is parenthesis
+		let initial: Option<Expression> = if self.current_is(Token::Assign) {
+			self.expect_token_and_read(Token::Assign)?; // Skip the "Assign"
+
+			Some(self.parse_expression(Precedence::Lowest)?) // Parse the expression after the assign
 		} else {
-			None
+			None // If not parenthesis, return none
 		};
 
+		// Return the create statement
 		Ok(Statement::CreateDeclaration { name, initial })
 	}
 
 	fn parse_const(&mut self) -> Result<Statement, ParseError> {
-		self.expect_token_and_read(Token::Const)?;
+		self.expect_token_and_read(Token::Const)?; // Skip 'const'
 
+		// Parse identifier of the constant
 		let name: Identifier = self.expect_identifier_and_read()?.into();
+
+		// Expect '='
 		self.expect_token_and_read(Token::Assign)?;
 
-		let initial = self.parse_expression(Precedence::Lowest)?;
+		// Parse and expect value
+		let value = self.parse_expression(Precedence::Lowest)?;
 
-		Ok(Statement::ConstDeclaration { name, initial })
+		// Return const creation statement
+		Ok(Statement::ConstDeclaration { name, value })
 	}
 
 	fn parse_struct(&mut self) -> Result<Statement, ParseError> {
@@ -528,89 +570,109 @@ impl<'p> Parser<'p> {
 	}
 
 	fn parse_fn(&mut self, with_identifier: bool) -> Result<Statement, ParseError> {
-		self.expect_token_and_read(Token::Fn)?;
+		self.expect_token_and_read(Token::Fn)?; // Skip 'fn'
 
+		// Read optional function identifier
 		let name: Identifier = if with_identifier { self.expect_identifier_and_read()?.into() } else { String::from("<Closure>") };
 
+		// Parse function arguments list
 		self.expect_token_and_read(Token::LeftParen)?;
 
+		// Vector of identifiers made out of parameters
 		let mut params: Vec<Parameter> = Vec::new();
 
+		// Read until a ')' token is found
 		while !self.current_is(Token::RightParen) {
+			// Skip ',' symbol and continue
 			if self.current_is(Token::Comma) {
 				self.expect_token_and_read(Token::Comma)?;
 			}
 
+			// Read identifier of argument
 			let param: String = self.expect_identifier_and_read()?.into();
 
+			// Read presense of initial value and parse it
 			if self.current_is(Token::Assign) {
+				// Skip '=' token
 				self.expect_token_and_read(Token::Assign)?;
 
+				// Parse initial value
 				let initial = self.parse_expression(Precedence::Lowest)?;
 
+				// Push it inside vector
 				params.push(Parameter { name: param, initial: Some(initial) });
 			} else {
+				// Add parameter withouth initial value
 				params.push(Parameter { name: param, initial: None });
 			}
 		}
 
+		// Finish current arguments list
 		self.expect_token_and_read(Token::RightParen)?;
 
+		// Parse function body
 		let body: Vec<Statement> = self.parse_block()?;
 
+		// Make function out of it
 		Ok(Statement::FunctionDeclaration { name, params, body })
 	}
 
 	fn parse_block(&mut self) -> Result<Block, ParseError> {
-		self.expect_token_and_read(Token::LeftBrace)?;
+		self.expect_token_and_read(Token::LeftBrace)?; // Skip opening brace
 
-		let mut block = Vec::new();
+		let mut block = Vec::new(); // Vector of statements
 
+		// Until closing brace
 		while !self.current_is(Token::RightBrace) {
-			block.push(self.parse_statement()?);
+			block.push(self.parse_statement()?); // Parse statement and add to vector
 		}
 
-		self.expect_token_and_read(Token::RightBrace)?;
+		self.expect_token_and_read(Token::RightBrace)?; // Skip closing brace
 
-		Ok(block)
+		Ok(block) // Return block
 	}
 
 	fn expect_token(&mut self, token: Token) -> Result<Token, ParseError> {
 		if self.current_is(token.clone()) {
-			Ok(self.current.clone())
+			// If expected token is found
+			Ok(self.current.clone()) // Return token
 		} else {
-			Err(ParseError::UnexpectedTokenExpected(self.current.clone(), token))
+			Err(ParseError::UnexpectedTokenExpected(self.current.clone(), token)) // Else, return error
 		}
 	}
 
 	fn expect_token_and_read(&mut self, token: Token) -> Result<Token, ParseError> {
-		// TODO: Replace token for optional token
-		let result = self.expect_token(token)?;
+		let result = self.expect_token(token); // Read and find token
 
-		self.read();
+		self.read(); // Skip token
 
-		Ok(result)
+		result // Return token read
 	}
 
 	fn expect_identifier_and_read(&mut self) -> Result<Token, ParseError> {
-		self.expect_token_and_read(Token::Identifier("".to_string()))
+		self.expect_token_and_read(Token::Identifier(String::new())) // Read identifier and read it
 	}
 
 	fn current_is(&self, token: Token) -> bool {
+		// Check if current token is equal to the token passed in argument
 		std::mem::discriminant(&self.current) == std::mem::discriminant(&token)
 	}
 
 	fn read(&mut self) {
+		// Change current token into peek token
 		self.current = self.peek.clone();
+
+		// Change peek token into next token
 		self.peek = if let Some(token) = self.tokens.next() { token.clone() } else { Token::Eof };
 	}
 
 	fn next(&mut self) -> Result<Option<Statement>, ParseError> {
-		if self.current == Token::Eof {
+		// If end of file is reached, return None
+		if self.current_is(Token::Eof) {
 			return Ok(None);
 		}
 
-		Ok(Some(self.parse_statement()?))
+		Ok(Some(self.parse_statement()?)) // Otherwise, return current statement
 	}
 }
 
@@ -639,7 +701,7 @@ mod tests {
 
 	fn lex_and_parse(input: &str) -> Program {
 		let tokens = token::generate(input);
-		parse(tokens).unwrap()
+		bindings::parse(tokens).unwrap()
 	}
 
 	#[test]
@@ -651,7 +713,7 @@ mod tests {
 			vec![Statement::FunctionDeclaration {
 				name: String::from("name"),
 				body: vec![],
-				params: vec![Parameter { name: String::from("person") }]
+				params: vec![Parameter { name: String::from("person"), initial: None }]
 			}]
 		);
 
@@ -660,7 +722,7 @@ mod tests {
 			vec![Statement::FunctionDeclaration {
 				name: String::from("say_hello"),
 				body: vec![],
-				params: vec![Parameter { name: String::from("name") }, Parameter { name: String::from("separator") }]
+				params: vec![Parameter { name: String::from("name"), initial: None }, Parameter { name: String::from("separator"), initial: None }]
 			}]
 		);
 
@@ -691,7 +753,7 @@ mod tests {
 
 		assert_eq!(
 			lex_and_parse("const bool = false"),
-			vec![Statement::ConstDeclaration { name: String::from("bool"), initial: Expression::Bool(false) }]
+			vec![Statement::ConstDeclaration { name: String::from("bool"), value: Expression::Bool(false) }]
 		);
 	}
 
@@ -776,7 +838,10 @@ mod tests {
 		assert_eq!(
 			lex_and_parse("hello(true)"),
 			vec![Statement::Expression {
-				expression: Expression::Call(Box::new(Expression::Identifier("hello".to_owned())), vec![Expression::Bool(true)])
+				expression: Expression::Call(
+					Box::new(Expression::Identifier("hello".to_owned())),
+					vec![Argument { name: None, expression: Expression::Bool(true) }]
+				)
 			}]
 		);
 
@@ -785,7 +850,10 @@ mod tests {
 			vec![Statement::Expression {
 				expression: Expression::Call(
 					Box::new(Expression::Identifier("hello".to_owned())),
-					vec![Expression::Bool(true), Expression::Number(1234.0)]
+					vec![
+						Argument { name: None, expression: Expression::Bool(true) },
+						Argument { name: None, expression: Expression::Number(1234.0) }
+					]
 				)
 			}]
 		);
@@ -985,7 +1053,7 @@ mod tests {
 			),
 			vec![Statement::StructDeclaration {
 				name: String::from("Point"),
-				fields: vec![Parameter { name: String::from("x") }, Parameter { name: String::from("y") }]
+				fields: vec![Parameter { name: String::from("x"), initial: None }, Parameter { name: String::from("y"), initial: None }]
 			}]
 		);
 
@@ -1007,13 +1075,13 @@ mod tests {
 			vec![
 				Statement::StructDeclaration {
 					name: "Person".to_owned(),
-					fields: vec![Parameter { name: "name".to_owned() }, Parameter { name: "email".to_owned() }]
+					fields: vec![Parameter { name: "name".to_owned(), initial: None }, Parameter { name: "email".to_owned(), initial: None }]
 				},
 				Statement::Expression {
 					expression: Expression::Assign(
-						Box::new(Expression::Get(Box::new(Expression::Identifier("Person".to_owned())), "new".to_owned())),
+						Box::new(Expression::GetProperty(Box::new(Expression::Identifier("Person".to_owned())), "new".to_owned())),
 						Box::new(Expression::Closure(
-							vec![Parameter { name: "name".to_owned() }, Parameter { name: "email".to_owned() }],
+							vec![Parameter { name: "name".to_owned(), initial: None }, Parameter { name: "email".to_owned(), initial: None }],
 							vec![Statement::Return {
 								value: Expression::Struct(Box::new(Expression::Identifier("Person".to_owned())), struct_fields)
 							}]
