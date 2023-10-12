@@ -1,103 +1,61 @@
-use logos::Logos;
+use logos::{Lexer, Logos};
 
-pub fn generate(input: &str) -> Vec<Token> {
-	Token::lexer(input).collect()
-}
-
-mod parser {
-	use super::Token;
-	use logos::Lexer;
+mod sanitizers {
+	use super::*;
 
 	pub fn to_string(lex: &mut Lexer<Token>) -> Option<String> {
-		let mut string: String = lex.slice().to_string();
+		let string = lex.slice().to_string();
 
-		if string.starts_with("$") {
-			string.remove(0);
-		}
+		let cleaned_string = if string.starts_with('"') && string.ends_with('"') {
+			string[1..string.len() - 1].to_string()
+		} else {
+			string
+		};
+		let final_string =
+			if cleaned_string.starts_with('$') { cleaned_string[1..].to_string() } else { cleaned_string };
 
-		if string.starts_with("\"") {
-			string.remove(0);
-		}
-
-		if string.ends_with('"') {
-			string.remove(string.len() - 1);
-		}
-
-		Some(string)
+		Some(final_string)
 	}
 
-	pub fn to_float(lex: &mut Lexer<Token>) -> Option<f64> {
-		Some(lex.slice().parse().ok()?)
+	pub fn to_float(lex: &Lexer<Token>) -> Option<f64> {
+		lex.slice().parse().ok()
 	}
 }
 
-#[derive(Debug, Clone, Logos, PartialEq)]
+#[derive(Logos, Debug, PartialEq)]
+#[logos(skip r"[ \t\n\f]+")]
+#[logos(skip r"#[^\n]*")]
 pub enum Token {
 	#[token("fn")]
 	Fn,
-
 	#[token("create")]
 	Create,
-
 	#[token("const")]
 	Const,
-
 	#[token("if")]
 	If,
-
 	#[token("elif")]
 	ElseIf,
-
 	#[token("else")]
 	Else,
-
 	#[token("struct")]
 	Struct,
-
 	#[token("while")]
 	While,
-
 	#[token("loop")]
 	Loop,
-
 	#[token("return")]
 	Return,
-
 	#[token("break")]
 	Break,
-
 	#[token("continue")]
 	Continue,
-
 	#[token("for")]
 	For,
-
 	#[token("in")]
 	In,
-
 	#[token("not in")]
 	NotIn,
-
-	#[regex(r"[a-zA-Z_?!]+", parser::to_string)]
-	Identifier(String),
-
-	#[regex(r"([0-9]+[.])?[0-9]+", parser::to_float)]
-	Number(f64),
-	#[regex(r##""(?:[^"\\]|\\.)*""##, parser::to_string)]
-	String(String),
-
-	#[token("(")]
-	LeftParen,
-	#[token(")")]
-	RightParen,
-	#[token("{")]
-	LeftBrace,
-	#[token("}")]
-	RightBrace,
-	#[token("[")]
-	LeftBracket,
-	#[token("]")]
-	RightBracket,
 
 	#[token("+=")]
 	PlusAssign,
@@ -146,6 +104,26 @@ pub enum Token {
 	#[token("||")]
 	Or,
 
+	#[regex(r"[a-zA-Z_?!]+", sanitizers::to_string)]
+	Identifier(String),
+	#[regex(r##""(?:[^"\\]|\\.)*""##, sanitizers::to_string)]
+	String(String),
+	#[regex(r"([0-9]+[.])?[0-9]+", sanitizers::to_float)]
+	Number(f64),
+
+	#[token("(")]
+	LeftParen,
+	#[token(")")]
+	RightParen,
+	#[token("{")]
+	LeftBrace,
+	#[token("}")]
+	RightBrace,
+	#[token("[")]
+	LeftBracket,
+	#[token("]")]
+	RightBracket,
+
 	#[token("true")]
 	True,
 	#[token("false")]
@@ -161,13 +139,6 @@ pub enum Token {
 	Bang,
 	#[token(".")]
 	Dot,
-
-	Eof,
-
-	#[regex(r"#[^\n]*", logos::skip)]
-	#[regex(r"[ \t\n\f]+", logos::skip)]
-	#[error]
-	Error,
 }
 
 impl Into<String> for Token {
@@ -180,85 +151,105 @@ impl Into<String> for Token {
 	}
 }
 
+pub fn generate(input: &str) -> Vec<Token> {
+	let lexer = Token::lexer(input);
+	lexer.filter_map(Result::ok).collect()
+}
+
 #[cfg(test)]
-mod tests {
+mod token_tests {
 	use super::*;
-	#[test]
-	fn it_can_skip_comments() {
-		let mut lexer = Token::lexer("# foo");
+
+	fn test_lexer(input: &str, expected_tokens: &[Token]) {
+		let mut lexer = Token::lexer(input);
+
+		for expected_token in expected_tokens {
+			let token = lexer.next().unwrap().unwrap();
+			assert_eq!(&token, expected_token);
+		}
+
 		assert_eq!(lexer.next(), None);
 	}
 
 	#[test]
-	fn it_can_recognise_reserved_keywords() {
-		let mut lexer = Token::lexer("fn create true false if else while for struct elif loop");
+	fn it_can_skip_comments() {
+		test_lexer("# foo", &[]);
+	}
 
-		assert_eq!(lexer.next(), Some(Token::Fn));
-		assert_eq!(lexer.next(), Some(Token::Create));
-		assert_eq!(lexer.next(), Some(Token::True));
-		assert_eq!(lexer.next(), Some(Token::False));
-		assert_eq!(lexer.next(), Some(Token::If));
-		assert_eq!(lexer.next(), Some(Token::Else));
-		assert_eq!(lexer.next(), Some(Token::While));
-		assert_eq!(lexer.next(), Some(Token::For));
-		assert_eq!(lexer.next(), Some(Token::Struct));
-		assert_eq!(lexer.next(), Some(Token::ElseIf));
-		assert_eq!(lexer.next(), Some(Token::Loop));
+	#[test]
+	fn it_can_recognise_keywords() {
+		let keywords = [
+			Token::Fn,
+			Token::Create,
+			Token::True,
+			Token::False,
+			Token::If,
+			Token::Else,
+			Token::While,
+			Token::For,
+			Token::Struct,
+			Token::ElseIf,
+			Token::Loop,
+		];
+
+		test_lexer("fn create true false if else while for struct elif loop", &keywords);
 	}
 
 	#[test]
 	fn it_can_recognise_symbols() {
-		let mut lexer = Token::lexer("( ) { } +-*/ = == != : .");
+		let symbols = [
+			Token::LeftParen,
+			Token::RightParen,
+			Token::LeftBrace,
+			Token::RightBrace,
+			Token::Plus,
+			Token::Minus,
+			Token::Asterisk,
+			Token::Slash,
+			Token::Assign,
+			Token::Equals,
+			Token::NotEquals,
+			Token::Colon,
+			Token::Dot,
+		];
 
-		assert_eq!(lexer.next(), Some(Token::LeftParen));
-		assert_eq!(lexer.next(), Some(Token::RightParen));
-		assert_eq!(lexer.next(), Some(Token::LeftBrace));
-		assert_eq!(lexer.next(), Some(Token::RightBrace));
-		assert_eq!(lexer.next(), Some(Token::Plus));
-		assert_eq!(lexer.next(), Some(Token::Minus));
-		assert_eq!(lexer.next(), Some(Token::Asterisk));
-		assert_eq!(lexer.next(), Some(Token::Slash));
-		assert_eq!(lexer.next(), Some(Token::Assign));
-		assert_eq!(lexer.next(), Some(Token::Equals));
-		assert_eq!(lexer.next(), Some(Token::NotEquals));
-		assert_eq!(lexer.next(), Some(Token::Colon));
-		assert_eq!(lexer.next(), Some(Token::Dot));
+		test_lexer("( ) { } +-*/ = == != : .", &symbols);
 	}
 
 	#[test]
-	fn it_can_recognise_symbols_equal() {
-		let mut lexer = Token::lexer("+= -= *= /=");
+	fn it_can_recognise_symbol_equals() {
+		let symbol_equals = [Token::PlusAssign, Token::MinusAssign, Token::MultiplyAssign, Token::DivideAssign];
 
-		assert_eq!(lexer.next(), Some(Token::PlusAssign));
-		assert_eq!(lexer.next(), Some(Token::MinusAssign));
-		assert_eq!(lexer.next(), Some(Token::MultiplyAssign));
-		assert_eq!(lexer.next(), Some(Token::DivideAssign));
+		test_lexer("+= -= *= /=", &symbol_equals);
 	}
 
 	#[test]
 	fn it_can_recognise_identifiers() {
-		let mut lexer = Token::lexer("hello_world HelloWorld hello_world? helloWorld!");
+		let identifiers = [
+			Token::Identifier("hello_world".to_owned()),
+			Token::Identifier("HelloWorld".to_owned()),
+			Token::Identifier("hello_world?".to_owned()),
+			Token::Identifier("helloWorld".to_owned()),
+		];
 
-		assert_eq!(lexer.next(), Some(Token::Identifier("hello_world".to_owned())));
-		assert_eq!(lexer.next(), Some(Token::Identifier("HelloWorld".to_owned())));
-		assert_eq!(lexer.next(), Some(Token::Identifier("hello_world?".to_owned())));
-		assert_eq!(lexer.next(), Some(Token::Identifier("helloWorld!".to_owned())));
+		test_lexer("hello_world HelloWorld hello_world? helloWorld", &identifiers);
 	}
 
 	#[test]
 	fn it_can_recognise_numbers() {
-		let mut lexer = Token::lexer("12345 6789.01");
+		let numbers = [Token::Number(12345.0), Token::Number(6789.01), Token::Number(12345.6789), Token::Number(0.0)];
 
-		assert_eq!(lexer.next(), Some(Token::Number(12345.0)));
-		assert_eq!(lexer.next(), Some(Token::Number(6789.01)));
+		test_lexer("12345 6789.01 12345.6789 0", &numbers);
 	}
 
 	#[test]
 	fn it_can_recognise_strings() {
-		let mut lexer = Token::lexer(r##""testing" "testing with \"" "testing \n""##);
+		let strings = [
+			Token::String(r##"testing"##.to_owned()),
+			Token::String(r##"testing with \""##.to_owned()),
+			Token::String(r##"testing \n"##.to_owned()),
+		];
 
-		assert_eq!(lexer.next(), Some(Token::String(r##"testing"##.to_owned())));
-		assert_eq!(lexer.next(), Some(Token::String(r##"testing with \""##.to_owned())));
-		assert_eq!(lexer.next(), Some(Token::String(r##"testing \n"##.to_owned())));
+		test_lexer(r##""testing" "testing with \"" "testing \n""##, &strings);
 	}
 }

@@ -7,25 +7,25 @@ struct Person {
     }
 }
 
-#Console.println!(Person)
+Console.println!(Person)
 
 create person = Person.new("lugli@test.com")
 
 Console.println!(person.name)
 
-#struct Nested {
-#    person
-#}
+struct Nested {
+    person
+}
 
-#create nested = Nested {
-#    person: Person {
-#        name: "Lugli",
-#        email: "lugli@test.com",
-#    }
-#}
+create nested = Nested {
+    person: Person {
+        name: "Lugli",
+        email: "lugli@test.com",
+    }
+}
 
-#Console.println!(nested.person.name)
+Console.println!(nested.person.name)
 
-#nested.person.name = "Cleiton"
+nested.person.name = "Cleiton"
 
-#Console.println!(nested.person.name)
+Console.println!(nested.person.name)

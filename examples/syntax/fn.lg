@@ -1,7 +1,7 @@
 fn say_hello(name) {
-    println!("Hello, " + name)
+    Console.println!("Hello, " + name)
 }
 
-println!(say_hello)
+Console.println!(say_hello)
 
 say_hello("Lugli")

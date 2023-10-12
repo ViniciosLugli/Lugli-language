@@ -1,6 +1,6 @@
 create current_datetime = Time.datetime?()
 #create teste = current_datetime.seconds
-current_datetime.seconds = 59
+#current_datetime.seconds = 50
 #current_datetime.hours = 4
 Console.println!(current_datetime.seconds)
 
