@@ -31,7 +31,7 @@ pub enum Token {
 	#[token("create")]
 	Create,
 	#[token("constant")]
-	Const,
+	Constant,
 	#[token("if")]
 	If,
 	#[token("elif")]
@@ -180,7 +180,7 @@ mod token_tests {
 	fn it_can_recognise_keywords() {
 		let keywords = [
 			Token::Fn,
-			Token::Const,
+			Token::Constant,
 			Token::Create,
 			Token::True,
 			Token::False,
@@ -271,7 +271,7 @@ mod token_tests {
 			Token::LeftParen,
 			Token::RightParen,
 			Token::LeftBrace,
-			Token::Const,
+			Token::Constant,
 			Token::Identifier("a".to_owned()),
 			Token::Assign,
 			Token::Number(1.0),
