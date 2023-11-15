@@ -30,7 +30,7 @@ pub enum Token {
 	Fn,
 	#[token("create")]
 	Create,
-	#[token("const")]
+	#[token("constant")]
 	Const,
 	#[token("if")]
 	If,
@@ -180,6 +180,7 @@ mod token_tests {
 	fn it_can_recognise_keywords() {
 		let keywords = [
 			Token::Fn,
+			Token::Const,
 			Token::Create,
 			Token::True,
 			Token::False,
@@ -192,7 +193,7 @@ mod token_tests {
 			Token::Loop,
 		];
 
-		test_lexer("fn create true false if else while for struct elif loop", &keywords);
+		test_lexer("fn constant create true false if else while for struct elif loop", &keywords);
 	}
 
 	#[test]
@@ -251,5 +252,46 @@ mod token_tests {
 		];
 
 		test_lexer(r##""testing" "testing with \"" "testing \n""##, &strings);
+	}
+
+	#[test]
+	fn it_can_recognise_full_code() {
+		let code = r##"
+			fn main() {
+				constant a = 1
+				create b = 2
+				create c = a + b
+				print(c)
+			}
+		"##;
+
+		let tokens = [
+			Token::Fn,
+			Token::Identifier("main".to_owned()),
+			Token::LeftParen,
+			Token::RightParen,
+			Token::LeftBrace,
+			Token::Const,
+			Token::Identifier("a".to_owned()),
+			Token::Assign,
+			Token::Number(1.0),
+			Token::Create,
+			Token::Identifier("b".to_owned()),
+			Token::Assign,
+			Token::Number(2.0),
+			Token::Create,
+			Token::Identifier("c".to_owned()),
+			Token::Assign,
+			Token::Identifier("a".to_owned()),
+			Token::Plus,
+			Token::Identifier("b".to_owned()),
+			Token::Identifier("print".to_owned()),
+			Token::LeftParen,
+			Token::Identifier("c".to_owned()),
+			Token::RightParen,
+			Token::RightBrace,
+		];
+
+		test_lexer(code, &tokens);
 	}
 }
