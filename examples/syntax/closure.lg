@@ -1,7 +1,0 @@
-create prefix = "Hello, "
-
-create say_hello = fn (name) {
-    println!(prefix + name)
-}
-
-say_hello("Lugli")

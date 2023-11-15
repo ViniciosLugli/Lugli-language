@@ -1,7 +1,0 @@
-create user_input
-
-print!("Digite seu nome: ")
-
-user_input = input!()
-
-println!("Olá " + user_input)

@@ -1,5 +1,0 @@
-println!("Before exit")
-
-exit!()
-
-println!("After exit")

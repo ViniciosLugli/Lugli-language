@@ -1,5 +1,0 @@
-fn hello_language(lang) {
-    println!("Hello, " + lang + " Language!")
-}
-
-hello_language("Lugli")

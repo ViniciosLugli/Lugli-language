@@ -1,7 +1,0 @@
-fn say_hello(name) {
-    Console.println!("Hello, " + name)
-}
-
-Console.println!(say_hello)
-
-say_hello("Lugli")
