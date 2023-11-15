@@ -47,6 +47,7 @@ pub enum Expression {
 	Infix(Box<Expression>, Op, Box<Expression>),
 	Prefix(Op, Box<Expression>),
 	Class(Box<Expression>, HashMap<Identifier, Expression>),
+	Call(Box<Expression>, Vec<Parameter>),
 	Closure(Vec<Parameter>, Vec<Statement>),
 	Index(Box<Expression>, Option<Box<Expression>>),
 }

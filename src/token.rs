@@ -1,3 +1,5 @@
+use std::clone;
+
 use logos::{Lexer, Logos};
 
 mod sanitizers {
@@ -17,12 +19,12 @@ mod sanitizers {
 	}
 }
 
-#[derive(Logos, Debug, PartialEq)]
+#[derive(Logos, Clone, Debug, PartialEq)]
 #[logos(skip r"[ \t\n\f]+")]
 #[logos(skip r"#[^\n]*")]
 pub enum Token {
 	#[token("fn")]
-	Fn,
+	Function,
 	#[token("create")]
 	Create,
 	#[token("constant")]
@@ -134,6 +136,8 @@ pub enum Token {
 	Bang,
 	#[token(".")]
 	Dot,
+
+	Eof,
 }
 
 impl Into<String> for Token {
@@ -148,7 +152,9 @@ impl Into<String> for Token {
 
 pub fn generate(input: &str) -> Vec<Token> {
 	let lexer = Token::lexer(input);
-	lexer.filter_map(Result::ok).collect()
+	let mut tokens: Vec<Token> = lexer.filter_map(Result::ok).collect();
+	tokens.push(Token::Eof);
+	tokens
 }
 
 #[cfg(test)]
@@ -177,7 +183,7 @@ mod token_tests {
 	#[test]
 	fn it_can_recognise_keywords() {
 		let keywords = [
-			Token::Fn,
+			Token::Function,
 			Token::Constant,
 			Token::Create,
 			Token::True,
@@ -243,11 +249,8 @@ mod token_tests {
 
 	#[test]
 	fn it_can_recognise_strings() {
-		let strings = [
-			Token::String(r##"testing"##.to_owned()),
-			Token::String(r##"testing with \""##.to_owned()),
-			Token::String(r##"testing \n"##.to_owned()),
-		];
+		let strings =
+			[Token::String(r##"testing"##.to_owned()), Token::String(r##"testing with \""##.to_owned()), Token::String(r##"testing \n"##.to_owned())];
 
 		test_lexer(r##""testing" "testing with \"" "testing \n""##, &strings);
 	}
@@ -264,7 +267,7 @@ mod token_tests {
 		"##;
 
 		let tokens = [
-			Token::Fn,
+			Token::Function,
 			Token::Identifier("main".to_owned()),
 			Token::LeftParen,
 			Token::RightParen,
