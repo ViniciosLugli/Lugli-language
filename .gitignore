@@ -12,3 +12,7 @@ rustfmt.toml
 *.pdb
 
 .env
+
+# Commitgpt
+.commitgpt.json
+.commitgpt-template
