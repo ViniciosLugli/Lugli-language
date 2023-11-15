@@ -1,7 +1,7 @@
 [package]
-name = "Lugli-language-interpreter"
+name = "lugli-language"
 version = "0.4.0"
-description = "My 'lugli' language interpreter for learning purposes"
+description = "My 'lugli' language for learning purposes"
 authors = ["Vinicios Lugli <vinicioslugli@gmail.com>"]
 edition = "2021"
 
