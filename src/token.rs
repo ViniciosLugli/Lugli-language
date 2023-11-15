@@ -4,17 +4,12 @@ mod sanitizers {
 	use super::*;
 
 	pub fn to_string(lex: &mut Lexer<Token>) -> Option<String> {
-		let string = lex.slice().to_string();
-
-		let cleaned_string = if string.starts_with('"') && string.ends_with('"') {
-			string[1..string.len() - 1].to_string()
+		let slice = lex.slice();
+		if slice.starts_with('"') && slice.ends_with('"') {
+			Some(slice[1..slice.len() - 1].replace("\\\"", "\""))
 		} else {
-			string
-		};
-		let final_string =
-			if cleaned_string.starts_with('$') { cleaned_string[1..].to_string() } else { cleaned_string };
-
-		Some(final_string)
+			Some(slice.to_string())
+		}
 	}
 
 	pub fn to_float(lex: &Lexer<Token>) -> Option<f64> {
@@ -164,11 +159,14 @@ mod token_tests {
 		let mut lexer = Token::lexer(input);
 
 		for expected_token in expected_tokens {
-			let token = lexer.next().unwrap().unwrap();
-			assert_eq!(&token, expected_token);
+			match lexer.next() {
+				Some(Ok(token)) => assert_eq!(&token, expected_token),
+				Some(Err(e)) => panic!("Lexer error: {:?}", e),
+				None => panic!("Unexpected end of tokens"),
+			}
 		}
 
-		assert_eq!(lexer.next(), None);
+		assert!(lexer.next().is_none(), "More tokens than expected");
 	}
 
 	#[test]
