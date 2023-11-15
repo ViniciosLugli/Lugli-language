@@ -33,8 +33,8 @@ pub enum Token {
 	ElseIf,
 	#[token("else")]
 	Else,
-	#[token("struct")]
-	Struct,
+	#[token("class")]
+	Class,
 	#[token("while")]
 	While,
 	#[token("loop")]
@@ -186,12 +186,12 @@ mod token_tests {
 			Token::Else,
 			Token::While,
 			Token::For,
-			Token::Struct,
+			Token::Class,
 			Token::ElseIf,
 			Token::Loop,
 		];
 
-		test_lexer("fn constant create true false if else while for struct elif loop", &keywords);
+		test_lexer("fn constant create true false if else while for class elif loop", &keywords);
 	}
 
 	#[test]
