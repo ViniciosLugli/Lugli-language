@@ -50,6 +50,7 @@ pub enum Expression {
 	Call(Box<Expression>, Vec<Parameter>),
 	Closure(Vec<Parameter>, Vec<Statement>),
 	Index(Box<Expression>, Option<Box<Expression>>),
+	Get(Box<Expression>, Identifier),
 }
 
 #[derive(Debug, PartialEq)]
