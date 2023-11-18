@@ -362,6 +362,17 @@ impl<'p> Parser<'p> {
 		Ok(statements)
 	}
 
+	fn parse_condition(&mut self) -> Result<Expression, ParseError> {
+		if self.current_is(Token::LeftParen) {
+			self.expect_token_and_read(Token::LeftParen)?;
+			let condition = self.parse_expression(Precedence::Statement)?;
+			self.expect_token_and_read(Token::RightParen)?;
+			Ok(condition)
+		} else {
+			self.parse_expression(Precedence::Statement)
+		}
+	}
+
 	fn parse_function(&mut self, with_identifier: bool) -> Result<Statement, ParseError> {
 		self.expect_token_and_read(Token::Function)?;
 
@@ -398,64 +409,46 @@ impl<'p> Parser<'p> {
 	fn parse_if(&mut self) -> Result<Statement, ParseError> {
 		self.expect_token_and_read(Token::If)?;
 
-		let condition_if;
-
-		if self.current_is(Token::LeftParen) {
-			self.expect_token_and_read(Token::LeftParen)?;
-			condition_if = self.parse_expression(Precedence::Lowest)?;
-			self.expect_token_and_read(Token::RightParen)?;
-		} else {
-			condition_if = self.parse_expression(Precedence::Statement)?;
-		}
+		let condition_if = self.parse_condition()?;
 
 		let then_if = self.parse_block()?;
 
-		let others_conditions = if self.current_is(Token::ElseIf) {
+		let others_conditions = self.parse_else_if_conditions()?;
+
+		let otherwise = self.parse_else_block()?;
+
+		Ok(Statement::If { condition: ConditionBlock { expression: condition_if, then: then_if }, others_conditions, otherwise })
+	}
+
+	fn parse_else_if_conditions(&mut self) -> Result<Option<Vec<ConditionBlock>>, ParseError> {
+		if self.current_is(Token::ElseIf) {
 			let mut others_conditions: Vec<ConditionBlock> = Vec::new();
 
 			while self.current_is(Token::ElseIf) {
 				self.expect_token_and_read(Token::ElseIf)?;
-
-				let condition_else_if;
-
-				if self.current_is(Token::LeftParen) {
-					self.expect_token_and_read(Token::LeftParen)?;
-					condition_else_if = self.parse_expression(Precedence::Lowest)?;
-					self.expect_token_and_read(Token::RightParen)?;
-				} else {
-					condition_else_if = self.parse_expression(Precedence::Statement)?;
-				}
+				let condition_else_if = self.parse_condition()?;
 				others_conditions.push(ConditionBlock { expression: condition_else_if, then: self.parse_block()? });
 			}
 
-			Some(others_conditions)
+			Ok(Some(others_conditions))
 		} else {
-			None
-		};
+			Ok(None)
+		}
+	}
 
-		let otherwise = if self.current_is(Token::Else) {
+	fn parse_else_block(&mut self) -> Result<Option<Block>, ParseError> {
+		if self.current_is(Token::Else) {
 			self.expect_token_and_read(Token::Else)?;
-			Some(self.parse_block()?)
+			Ok(Some(self.parse_block()?))
 		} else {
-			None
-		};
-
-		Ok(Statement::If { condition: ConditionBlock { expression: condition_if, then: then_if }, others_conditions, otherwise })
+			Ok(None)
+		}
 	}
 
 	fn parse_for(&mut self) -> Result<Statement, ParseError> {
 		self.expect_token_and_read(Token::For)?;
 
-		let (index, value) = if self.current_is(Token::LeftParen) {
-			self.expect_token_and_read(Token::LeftParen)?;
-			let index = self.expect_identifier_and_read()?;
-			self.expect_token_and_read(Token::Comma)?;
-			let tuple = (Some(index.into()), self.expect_identifier_and_read()?.into());
-			self.expect_token_and_read(Token::RightParen)?;
-			tuple
-		} else {
-			(None, self.expect_identifier_and_read()?.into())
-		};
+		let (index, value) = self.parse_for_loop_variables()?;
 
 		self.expect_token_and_read(Token::In)?;
 
@@ -465,17 +458,24 @@ impl<'p> Parser<'p> {
 		Ok(Statement::For { index, value, iterable, then })
 	}
 
+	fn parse_for_loop_variables(&mut self) -> Result<(Option<String>, String), ParseError> {
+		if self.current_is(Token::LeftParen) {
+			self.expect_token_and_read(Token::LeftParen)?;
+			let index = Some(self.expect_identifier_and_read()?);
+			self.expect_token_and_read(Token::Comma)?;
+			let value = self.expect_identifier_and_read()?;
+			self.expect_token_and_read(Token::RightParen)?;
+			Ok((index.map(|i| i.into()), value.into()))
+		} else {
+			let value = self.expect_identifier_and_read()?;
+			Ok((None, value.into()))
+		}
+	}
+
 	fn parse_while(&mut self) -> Result<Statement, ParseError> {
 		self.expect_token_and_read(Token::While)?;
 
-		let condition = if self.current_is(Token::LeftParen) {
-			self.expect_token_and_read(Token::LeftParen)?;
-			let condition = self.parse_expression(Precedence::Statement)?;
-			self.expect_token_and_read(Token::RightParen)?;
-			condition
-		} else {
-			self.parse_expression(Precedence::Statement)?
-		};
+		let condition = self.parse_condition()?;
 
 		let then = self.parse_block()?;
 
