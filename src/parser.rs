@@ -558,37 +558,44 @@ impl<'p> Parser<'p> {
 
 	fn parse_class(&mut self) -> Result<Statement, ParseError> {
 		self.expect_token_and_read(Token::Class)?;
+
 		let name: Identifier = self.expect_identifier_and_read()?.into();
+
 		self.expect_token_and_read(Token::LeftBrace)?;
 
 		let mut fields: Vec<Parameter> = Vec::new();
 
 		while !self.current_is(Token::RightBrace) {
-			match self.current {
-				Token::Function => {
-					let function = self.parse_function(true)?;
-					if let Statement::FunctionDeclaration { name, params, body } = function {
-						fields.push(Parameter { name, default: Some(Expression::Closure(params, body)) });
-					} else {
-						return Err(ParseError::ExpectedFunctionDeclarationClass);
+			if self.current_is(Token::Function) {
+				let function = self.parse_function(true)?;
+				if let Statement::FunctionDeclaration { name, params, body } = function {
+					let closure = Expression::Closure(params.clone(), body);
+
+					fields.push(Parameter { name, default: Some(closure) });
+				} else {
+					return Err(ParseError::UnexpectedToken(self.current.clone()));
+				}
+			} else {
+				let field: String = self.expect_identifier_and_read()?.into();
+
+				match self.current.clone() {
+					Token::Comma | Token::RightBrace | Token::Function | Token::Identifier(..) => {
+						fields.push(Parameter { name: field, default: None })
 					}
-				}
-				Token::Identifier(_) => {
-					let field: String = self.expect_identifier_and_read()?.into();
-					let default = if self.current_is(Token::Assign) {
+					Token::Assign => {
 						self.expect_token_and_read(Token::Assign)?;
-						Some(self.parse_expression(Precedence::Lowest)?)
-					} else {
-						None
-					};
-					fields.push(Parameter { name: field, default });
+
+						let default = self.parse_expression(Precedence::Lowest)?;
+
+						fields.push(Parameter { name: field, default: Some(default) });
+					}
+					_ => unreachable!(),
 				}
-				Token::Comma | Token::RightBrace => (),
-				_ => return Err(ParseError::UnexpectedTokenClass),
 			}
 		}
 
 		self.expect_token_and_read(Token::RightBrace)?;
+
 		Ok(Statement::ClassDeclaration { name, fields })
 	}
 }
