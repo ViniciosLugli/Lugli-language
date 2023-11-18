@@ -53,7 +53,7 @@ pub enum Value {
 	Null,
 	Bool(bool),
 	Struct { name: String, fields: Vec<Parameter>, methods: Rc<RefCell<HashMap<String, Value>>>, propreties: Option<Vec<Value>> },
-	StructInstance { environment: Rc<RefCell<Environment>>, definition: Box<Value> },
+	ClassInstance { environment: Rc<RefCell<Environment>>, definition: Box<Value> },
 	List(Rc<RefCell<Vec<Value>>>),
 	Function { name: String, params: Vec<Parameter>, body: Block, environment: Option<Environment>, context: Option<Expression> },
 	NativeFunction { name: String, callback: NativeFunctionCallback },
@@ -74,7 +74,7 @@ impl Debug for Value {
 				Value::NativeFunction { name, .. } | Value::NativeMethod { name, .. } => format!("<{}>", name),
 				Value::Function { name, params, .. } =>
 					format!("<{}>({})", name, params.into_iter().map(|p| p.name.clone()).collect::<Vec<String>>().join(", ")),
-				Value::StructInstance { definition, .. } => {
+				Value::ClassInstance { definition, .. } => {
 					let name = match *definition.clone() {
 						Value::Struct { name, .. } => name,
 						_ => unreachable!(),
@@ -160,7 +160,7 @@ impl Value {
 				}
 			}
 			Value::Null => "".to_string(),
-			v @ Value::Function { .. } | v @ Value::StructInstance { .. } | v @ Value::List(..) => format!("{:?}", v),
+			v @ Value::Function { .. } | v @ Value::ClassInstance { .. } | v @ Value::List(..) => format!("{:?}", v),
 			Value::Constant(v) => v.to_string(),
 			Value::NativeFunction { name, .. } | Value::NativeMethod { name, .. } => format!("<{}>", name),
 			Value::Struct { name, methods, fields, .. } => {
@@ -216,7 +216,7 @@ impl Value {
 			Value::Bool(..) => "bool".into(),
 			Value::Null => "null".into(),
 			Value::Function { .. } | Value::NativeFunction { .. } | Value::NativeMethod { .. } => "function".into(),
-			Value::StructInstance { definition, .. } => match *definition.clone() {
+			Value::ClassInstance { definition, .. } => match *definition.clone() {
 				Value::Struct { name, .. } => name,
 				_ => unreachable!(),
 			},

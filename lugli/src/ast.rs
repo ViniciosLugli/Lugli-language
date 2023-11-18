@@ -16,6 +16,24 @@ pub struct Parameter {
 	pub default: Option<Expression>,
 }
 
+impl Parameter {
+	pub fn new(name: String, default: Option<Expression>) -> Self {
+		Self { name, default }
+	}
+
+	pub fn get_name(&self) -> String {
+		self.name.clone()
+	}
+
+	pub fn get_default(&self) -> Option<Expression> {
+		self.default.clone()
+	}
+
+	pub fn has_default(&self) -> bool {
+		self.default.is_some()
+	}
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
 	Program(Vec<Statement>),
@@ -162,7 +180,86 @@ pub struct ArgumentValued {
 	pub value: Value,
 }
 
+impl ArgumentValued {
+	pub fn new(name: Option<String>, value: Value) -> Self {
+		Self { name, value }
+	}
+
+	pub fn get_name(&self) -> Option<String> {
+		self.name.clone()
+	}
+
+	pub fn get_value(&self) -> Value {
+		self.value.clone()
+	}
+}
+
 #[derive(Debug, Clone)]
 pub struct ArgumentValues {
 	params_values: Vec<ArgumentValued>,
+}
+
+impl ArgumentValues {
+	pub fn new() -> ArgumentValues {
+		ArgumentValues { params_values: Vec::new() }
+	}
+
+	pub fn get_from_name(&self, name: Identifier) -> Option<Value> {
+		for param in &self.params_values {
+			if param.name == Some(name.clone()) {
+				return Some(param.value.clone());
+			}
+		}
+		None
+	}
+
+	pub fn get_from_index(&self, index: usize) -> Option<Value> {
+		if index < self.params_values.len() {
+			return Some(self.params_values[index].value.clone());
+		}
+		None
+	}
+
+	pub fn get_from_name_or_index(&self, name: String, index: usize) -> Option<Value> {
+		if let Some(value) = self.get_from_name(name) {
+			return Some(value);
+		}
+		self.get_from_index(index)
+	}
+
+	pub fn is_empty(&self) -> bool {
+		self.params_values.is_empty()
+	}
+
+	pub fn push(&mut self, argument_valued: ArgumentValued) {
+		self.params_values.push(argument_valued);
+	}
+
+	pub fn push_back(&mut self, argument_valued: ArgumentValued) {
+		self.params_values.insert(0, argument_valued);
+	}
+
+	pub fn get_raw(&self) -> Vec<ArgumentValued> {
+		self.params_values.clone()
+	}
+
+	pub fn len(&self) -> usize {
+		self.params_values.len()
+	}
+
+	pub fn get_all_values(&self) -> Vec<Value> {
+		let mut values = Vec::new();
+		for param in &self.params_values {
+			values.push(param.value.clone());
+		}
+		values
+	}
+}
+
+impl Iterator for ArgumentValues {
+	type Item = ArgumentValued;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		self.params_values.pop()
+	}
 }
