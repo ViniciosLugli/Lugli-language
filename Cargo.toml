@@ -1,20 +1,2 @@
-[package]
-name = "lugli-language"
-version = "0.4.0"
-description = "My 'lugli' language for learning purposes"
-authors = ["Vinicios Lugli <vinicioslugli@gmail.com>"]
-edition = "2021"
-
-[dependencies]
-logos = "0.13.0"
-thiserror = "1.0.50"
-hashbrown = "0.14.2"
-regex = "1.10.2"
-colored = "2.0.4"
-chrono = "0.4.31"
-
-[profile.release]
-opt-level = 3
-codegen-units = 1
-lto = true
-# panic = "abort"
+[workspace]
+members = ["./lugli"]

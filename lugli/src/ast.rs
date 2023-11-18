@@ -1,4 +1,4 @@
-use crate::token::Token;
+use crate::{environment::Value, token::Token};
 use hashbrown::HashMap;
 pub type Block = Vec<Statement>;
 pub type Identifier = String;
@@ -154,4 +154,15 @@ impl CallArguments {
 		self.arguments.push(argument);
 		self
 	}
+}
+
+#[derive(Debug, Clone)]
+pub struct ArgumentValued {
+	pub name: Option<Identifier>,
+	pub value: Value,
+}
+
+#[derive(Debug, Clone)]
+pub struct ArgumentValues {
+	params_values: Vec<ArgumentValued>,
 }
