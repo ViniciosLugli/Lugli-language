@@ -1,9 +1,25 @@
+use crate::ast::Program;
 use crate::ast::{Argument, Block, CallArguments, ConditionBlock, Expression, Identifier, Op, Parameter, Statement};
 use crate::token::Token;
 use colored::Colorize;
 use hashbrown::HashMap;
 use std::slice::Iter;
 use thiserror::Error;
+
+pub fn parse(tokens: Vec<Token>) -> Result<Program, ParseError> {
+	let mut parser = Parser::new(tokens.iter());
+
+	parser.read();
+	parser.read();
+
+	let mut program: Program = Vec::new();
+
+	while let Some(statement) = parser.next()? {
+		program.push(statement);
+	}
+
+	Ok(program)
+}
 
 #[derive(Debug, Error)]
 pub enum ParseError {
@@ -572,5 +588,403 @@ impl<'p> Parser<'p> {
 
 		self.expect_token_and_read(Token::RightBrace)?;
 		Ok(Statement::ClassDeclaration { name, fields })
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::token;
+
+	fn lex_and_parse(input: &str) -> Program {
+		let tokens = token::generate(input);
+		parse(tokens).unwrap()
+	}
+
+	#[test]
+	fn it_can_parse_fn_declarations() {
+		assert_eq!(lex_and_parse("fn name() {}"), vec![Statement::FunctionDeclaration { name: String::from("name"), body: vec![], params: vec![] }]);
+
+		assert_eq!(
+			lex_and_parse("fn name(person) {}"),
+			vec![Statement::FunctionDeclaration {
+				name: String::from("name"),
+				body: vec![],
+				params: vec![Parameter { name: String::from("person"), default: None }]
+			}]
+		);
+
+		assert_eq!(
+			lex_and_parse("fn say_hello(name, separator) {}"),
+			vec![Statement::FunctionDeclaration {
+				name: String::from("say_hello"),
+				body: vec![],
+				params: vec![Parameter { name: String::from("name"), default: None }, Parameter { name: String::from("separator"), default: None }]
+			}]
+		);
+
+		assert_eq!(
+			lex_and_parse(
+				"
+                fn say_hello() {
+                    create name = true
+                }
+            "
+			),
+			vec![Statement::FunctionDeclaration {
+				name: String::from("say_hello"),
+				body: vec![Statement::VariableDeclaration { name: String::from("name"), initial: Some(Expression::Bool(true)) }],
+				params: vec![]
+			}]
+		)
+	}
+
+	#[test]
+	fn it_can_parse_create_declarations_and_const() {
+		assert_eq!(lex_and_parse("create name"), vec![Statement::VariableDeclaration { name: String::from("name"), initial: None }]);
+
+		assert_eq!(
+			lex_and_parse("create bool = true"),
+			vec![Statement::VariableDeclaration { name: String::from("bool"), initial: Some(Expression::Bool(true)) }]
+		);
+
+		assert_eq!(
+			lex_and_parse("const bool = false"),
+			vec![Statement::ConstantDeclaration { name: String::from("bool"), initial: Expression::Bool(false) }]
+		);
+	}
+
+	#[test]
+	fn it_can_parse_literals() {
+		assert_eq!(
+			lex_and_parse(r##"123 "testing" true false 123.456"##),
+			vec![
+				Statement::Expression { expression: Expression::Number(123.0) },
+				Statement::Expression { expression: Expression::String("testing".to_owned()) },
+				Statement::Expression { expression: Expression::Bool(true) },
+				Statement::Expression { expression: Expression::Bool(false) },
+				Statement::Expression { expression: Expression::Number(123.456) },
+			]
+		);
+	}
+
+	#[test]
+	fn it_can_parse_mathematical_operations() {
+		assert_eq!(
+			lex_and_parse("1 + 2"),
+			vec![Statement::Expression {
+				expression: Expression::Infix(Box::new(Expression::Number(1.0)), Op::Add, Box::new(Expression::Number(2.0)))
+			}]
+		);
+
+		assert_eq!(
+			lex_and_parse("1 - 2"),
+			vec![Statement::Expression {
+				expression: Expression::Infix(Box::new(Expression::Number(1.0)), Op::Subtract, Box::new(Expression::Number(2.0)))
+			}]
+		);
+
+		assert_eq!(
+			lex_and_parse("1 * 2"),
+			vec![Statement::Expression {
+				expression: Expression::Infix(Box::new(Expression::Number(1.0)), Op::Multiply, Box::new(Expression::Number(2.0)))
+			}]
+		);
+
+		assert_eq!(
+			lex_and_parse("1 / 2"),
+			vec![Statement::Expression {
+				expression: Expression::Infix(Box::new(Expression::Number(1.0)), Op::Divide, Box::new(Expression::Number(2.0)))
+			}]
+		);
+
+		assert_eq!(
+			lex_and_parse("1 + 2 * 3"),
+			vec![Statement::Expression {
+				expression: Expression::Infix(
+					Box::new(Expression::Number(1.0)),
+					Op::Add,
+					Box::new(Expression::Infix(Box::new(Expression::Number(2.0)), Op::Multiply, Box::new(Expression::Number(3.0)),))
+				)
+			}]
+		);
+
+		assert_eq!(
+			lex_and_parse("1 + 2 * 3 / 3"),
+			vec![Statement::Expression {
+				expression: Expression::Infix(
+					Box::new(Expression::Number(1.0)),
+					Op::Add,
+					Box::new(Expression::Infix(
+						Box::new(Expression::Infix(Box::new(Expression::Number(2.0)), Op::Multiply, Box::new(Expression::Number(3.0)),)),
+						Op::Divide,
+						Box::new(Expression::Number(3.0)),
+					),)
+				)
+			}]
+		);
+	}
+
+	#[test]
+	fn it_can_parse_call_expressions() {
+		assert_eq!(
+			lex_and_parse("hello()"),
+			vec![Statement::Expression { expression: Expression::Call(Box::new(Expression::Identifier("hello".to_owned())), CallArguments::new()) }]
+		);
+
+		assert_eq!(
+			lex_and_parse("hello(true)"),
+			vec![Statement::Expression {
+				expression: Expression::Call(
+					Box::new(Expression::Identifier("hello".to_owned())),
+					CallArguments::new().with_argument(Argument::new(None, Expression::Bool(true)))
+				)
+			}]
+		);
+
+		assert_eq!(
+			lex_and_parse("hello(true, 1234)"),
+			vec![Statement::Expression {
+				expression: Expression::Call(
+					Box::new(Expression::Identifier("hello".to_owned())),
+					CallArguments::new()
+						.with_argument(Argument::new(None, Expression::Bool(true)))
+						.with_argument(Argument::new(None, Expression::Number(1234.0)))
+				)
+			}]
+		);
+	}
+
+	#[test]
+	fn it_can_parse_if_statements() {
+		assert_eq!(
+			lex_and_parse("if true {}"),
+			vec![Statement::If {
+				condition: ConditionBlock { expression: Expression::Bool(true), then: vec![] },
+				others_conditions: None,
+				otherwise: None
+			}]
+		);
+
+		assert_eq!(
+			lex_and_parse(
+				"if true {
+					create number = 1
+				}"
+			),
+			vec![Statement::If {
+				condition: ConditionBlock {
+					expression: Expression::Bool(true),
+					then: vec![Statement::VariableDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) }]
+				},
+				others_conditions: None,
+				otherwise: None
+			}]
+		);
+
+		assert_eq!(
+			lex_and_parse(
+				"if false {
+					create number = 1
+				} else {
+					create number = 2
+				}"
+			),
+			vec![Statement::If {
+				condition: ConditionBlock {
+					expression: Expression::Bool(false),
+					then: vec![Statement::VariableDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) },]
+				},
+				others_conditions: None,
+				otherwise: Some(vec![Statement::VariableDeclaration { name: String::from("number"), initial: Some(Expression::Number(2.0)) },])
+			}]
+		);
+
+		assert_eq!(
+			lex_and_parse(
+				"if false {
+					create number = 3
+				} elif true{
+					create number = 6
+				}else {
+					create number = 9
+				}"
+			),
+			vec![Statement::If {
+				condition: ConditionBlock {
+					expression: Expression::Bool(false),
+					then: vec![Statement::VariableDeclaration { name: String::from("number"), initial: Some(Expression::Number(3.0)) },]
+				},
+				others_conditions: Some(vec![ConditionBlock {
+					expression: Expression::Bool(true),
+					then: vec![Statement::VariableDeclaration { name: String::from("number"), initial: Some(Expression::Number(6.0)) },]
+				}]),
+				otherwise: Some(vec![Statement::VariableDeclaration { name: String::from("number"), initial: Some(Expression::Number(9.0)) },])
+			}]
+		);
+	}
+
+	#[test]
+	fn it_can_parse_while_statements() {
+		assert_eq!(
+			lex_and_parse("while true {}"),
+			vec![Statement::While { condition: ConditionBlock { expression: Expression::Bool(true), then: vec![] } }]
+		);
+
+		assert_eq!(
+			lex_and_parse(
+				"while true {
+					create number = 1
+				}"
+			),
+			vec![Statement::While {
+				condition: ConditionBlock {
+					expression: Expression::Bool(true),
+					then: vec![Statement::VariableDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) }]
+				}
+			}]
+		);
+
+		assert_eq!(
+			lex_and_parse(
+				"while true {
+					break
+					create number = 1
+				}"
+			),
+			vec![Statement::While {
+				condition: ConditionBlock {
+					expression: Expression::Bool(true),
+					then: vec![
+						Statement::Break,
+						Statement::VariableDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) },
+					]
+				},
+			}]
+		);
+
+		assert_eq!(
+			lex_and_parse(
+				"while true {
+					if true {
+						continue
+					}
+					-- never touch this create number
+					create number = 1
+				}"
+			),
+			vec![Statement::While {
+				condition: ConditionBlock {
+					expression: Expression::Bool(true),
+					then: vec![
+						Statement::If {
+							condition: ConditionBlock { expression: Expression::Bool(true), then: vec![Statement::Continue] },
+							others_conditions: None,
+							otherwise: None
+						},
+						Statement::VariableDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) },
+					]
+				},
+			}]
+		);
+	}
+
+	#[test]
+	fn it_can_parse_loop_statements() {
+		assert_eq!(lex_and_parse("loop {}"), vec![Statement::Loop { body: vec![] }]);
+
+		assert_eq!(
+			lex_and_parse(
+				"loop {
+					create number = 1
+				}"
+			),
+			vec![Statement::Loop {
+				body: vec![Statement::VariableDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) }]
+			}]
+		);
+
+		assert_eq!(
+			lex_and_parse(
+				"loop {
+					break
+					create number = 1
+				}"
+			),
+			vec![Statement::Loop {
+				body: vec![Statement::Break, Statement::VariableDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) },]
+			}]
+		);
+
+		assert_eq!(
+			lex_and_parse(
+				"loop {
+					if true {
+						continue
+					}
+					-- never touch this create number
+					create number = 1
+				}"
+			),
+			vec![Statement::Loop {
+				body: vec![
+					Statement::If {
+						condition: ConditionBlock { expression: Expression::Bool(true), then: vec![Statement::Continue] },
+						others_conditions: None,
+						otherwise: None
+					},
+					Statement::VariableDeclaration { name: String::from("number"), initial: Some(Expression::Number(1.0)) },
+				]
+			}]
+		);
+	}
+
+	#[test]
+	fn it_can_parse_struct_declarations() {
+		assert_eq!(
+			lex_and_parse(
+				"struct Point {
+					x, y
+				}"
+			),
+			vec![Statement::ClassDeclaration {
+				name: String::from("Point"),
+				fields: vec![Parameter { name: String::from("x"), default: None }, Parameter { name: String::from("y"), default: None }]
+			}]
+		);
+
+		let mut struct_fields: HashMap<Identifier, Expression> = HashMap::new();
+		struct_fields.insert(Identifier::from("name"), Expression::Identifier("name".to_owned()));
+		struct_fields.insert(Identifier::from("email"), Expression::Identifier("email".to_owned()));
+
+		assert_eq!(
+			lex_and_parse(
+				"struct Person {
+					name,
+					email
+				}
+
+				Person.new = fn (name, email) {
+					return Person { name, email }
+				}"
+			),
+			vec![
+				Statement::ClassDeclaration {
+					name: "Person".to_owned(),
+					fields: vec![Parameter { name: "name".to_owned(), default: None }, Parameter { name: "email".to_owned(), default: None }]
+				},
+				Statement::Expression {
+					expression: Expression::Assign(
+						Box::new(Expression::Get(Box::new(Expression::Identifier("Person".to_owned())), "new".to_owned())),
+						Box::new(Expression::Closure(
+							vec![Parameter { name: "name".to_owned(), default: None }, Parameter { name: "email".to_owned(), default: None }],
+							vec![Statement::Return {
+								value: Expression::Class(Box::new(Expression::Identifier("Person".to_owned())), struct_fields)
+							}]
+						))
+					)
+				}
+			]
+		);
 	}
 }

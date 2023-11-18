@@ -2,6 +2,7 @@ use crate::token::Token;
 use hashbrown::HashMap;
 pub type Block = Vec<Statement>;
 pub type Identifier = String;
+pub type Program = Vec<Statement>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ConditionBlock {
@@ -142,5 +143,15 @@ impl CallArguments {
 
 	pub fn get_arguments(&self) -> &Vec<Argument> {
 		&self.arguments
+	}
+
+	pub fn with_arguments(mut self, arguments: Vec<Argument>) -> Self {
+		self.arguments = arguments;
+		self
+	}
+
+	pub fn with_argument(mut self, argument: Argument) -> Self {
+		self.arguments.push(argument);
+		self
 	}
 }
