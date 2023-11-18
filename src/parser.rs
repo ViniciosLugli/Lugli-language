@@ -1,5 +1,6 @@
-use crate::ast::{Argument, Block, CallArguments, Expression, Identifier, Op, Parameter, Statement};
+use crate::ast::{Argument, Block, CallArguments, ConditionBlock, Expression, Identifier, Op, Parameter, Statement};
 use crate::token::Token;
+use colored::Colorize;
 use hashbrown::HashMap;
 use std::slice::Iter;
 use thiserror::Error;
@@ -15,6 +16,13 @@ pub enum ParseError {
 	#[error("Entered unreachable code.")]
 	Unreachable,
 }
+
+impl ParseError {
+	pub fn print(self) {
+		eprintln!("{}", format!("{}", self).red().bold());
+	}
+}
+
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 enum Precedence {
 	Lowest,
@@ -283,7 +291,7 @@ impl<'p> Parser<'p> {
 		match self.current {
 			Token::Function => self.parse_function(true),
 			Token::Class => self.parse_class(),
-			Token::Create => self.parse_create(),
+			Token::Create => self.parse_variable(),
 			Token::Constant => self.parse_constant(),
 			Token::If => self.parse_if(),
 			Token::For => self.parse_for(),
@@ -376,5 +384,191 @@ impl<'p> Parser<'p> {
 		let body = self.parse_block()?;
 
 		Ok(Statement::FunctionDeclaration { name, params, body })
+	}
+
+	fn parse_if(&mut self) -> Result<Statement, ParseError> {
+		self.expect_token_and_read(Token::If)?;
+
+		let condition_if;
+
+		if self.current_is(Token::LeftParen) {
+			self.expect_token_and_read(Token::LeftParen)?;
+			condition_if = self.parse_expression(Precedence::Lowest)?;
+			self.expect_token_and_read(Token::RightParen)?;
+		} else {
+			condition_if = self.parse_expression(Precedence::Statement)?;
+		}
+
+		let then_if = self.parse_block()?;
+
+		let others_conditions = if self.current_is(Token::ElseIf) {
+			let mut others_conditions: Vec<ConditionBlock> = Vec::new();
+
+			while self.current_is(Token::ElseIf) {
+				self.expect_token_and_read(Token::ElseIf)?;
+
+				let condition_else_if;
+
+				if self.current_is(Token::LeftParen) {
+					self.expect_token_and_read(Token::LeftParen)?;
+					condition_else_if = self.parse_expression(Precedence::Lowest)?;
+					self.expect_token_and_read(Token::RightParen)?;
+				} else {
+					condition_else_if = self.parse_expression(Precedence::Statement)?;
+				}
+				others_conditions.push(ConditionBlock { expression: condition_else_if, then: self.parse_block()? });
+			}
+
+			Some(others_conditions)
+		} else {
+			None
+		};
+
+		let otherwise = if self.current_is(Token::Else) {
+			self.expect_token_and_read(Token::Else)?;
+			Some(self.parse_block()?)
+		} else {
+			None
+		};
+
+		Ok(Statement::If { condition: ConditionBlock { expression: condition_if, then: then_if }, others_conditions, otherwise })
+	}
+
+	fn parse_for(&mut self) -> Result<Statement, ParseError> {
+		self.expect_token_and_read(Token::For)?;
+
+		let (index, value) = if self.current_is(Token::LeftParen) {
+			self.expect_token_and_read(Token::LeftParen)?;
+			let index = self.expect_identifier_and_read()?;
+			self.expect_token_and_read(Token::Comma)?;
+			let tuple = (Some(index.into()), self.expect_identifier_and_read()?.into());
+			self.expect_token_and_read(Token::RightParen)?;
+			tuple
+		} else {
+			(None, self.expect_identifier_and_read()?.into())
+		};
+
+		self.expect_token_and_read(Token::In)?;
+
+		let iterable = self.parse_expression(Precedence::Statement)?;
+		let then = self.parse_block()?;
+
+		Ok(Statement::For { index, value, iterable, then })
+	}
+
+	fn parse_while(&mut self) -> Result<Statement, ParseError> {
+		self.expect_token_and_read(Token::While)?;
+
+		let condition = if self.current_is(Token::LeftParen) {
+			self.expect_token_and_read(Token::LeftParen)?;
+			let condition = self.parse_expression(Precedence::Statement)?;
+			self.expect_token_and_read(Token::RightParen)?;
+			condition
+		} else {
+			self.parse_expression(Precedence::Statement)?
+		};
+
+		let then = self.parse_block()?;
+
+		Ok(Statement::While { condition: ConditionBlock { expression: condition, then } })
+	}
+
+	fn parse_loop(&mut self) -> Result<Statement, ParseError> {
+		self.expect_token_and_read(Token::Loop)?;
+
+		let then = self.parse_block()?;
+
+		Ok(Statement::Loop { body: then })
+	}
+
+	fn parse_return(&mut self) -> Result<Statement, ParseError> {
+		self.expect_token_and_read(Token::Return)?;
+
+		if let Ok(expression) = self.parse_expression(Precedence::Lowest) {
+			Ok(Statement::Return { value: expression })
+		} else {
+			Ok(Statement::Return { value: Expression::Null })
+		}
+	}
+
+	fn parse_break(&mut self) -> Result<Statement, ParseError> {
+		self.expect_token_and_read(Token::Break)?;
+
+		Ok(Statement::Break)
+	}
+
+	fn parse_continue(&mut self) -> Result<Statement, ParseError> {
+		self.expect_token_and_read(Token::Continue)?;
+
+		Ok(Statement::Continue)
+	}
+
+	fn parse_variable(&mut self) -> Result<Statement, ParseError> {
+		self.expect_token_and_read(Token::Create)?;
+
+		let name: Identifier = self.expect_identifier_and_read()?.into();
+		let initial: Option<Expression> = if self.current_is(Token::Assign) {
+			self.expect_token_and_read(Token::Assign)?;
+
+			Some(self.parse_expression(Precedence::Lowest)?)
+		} else {
+			None
+		};
+
+		Ok(Statement::VariableDeclaration { name, initial })
+	}
+
+	fn parse_constant(&mut self) -> Result<Statement, ParseError> {
+		self.expect_token_and_read(Token::Constant)?;
+
+		let name: Identifier = self.expect_identifier_and_read()?.into();
+		self.expect_token_and_read(Token::Assign)?;
+
+		let initial = self.parse_expression(Precedence::Lowest)?;
+
+		Ok(Statement::ConstantDeclaration { name, initial })
+	}
+
+	fn parse_class(&mut self) -> Result<Statement, ParseError> {
+		self.expect_token_and_read(Token::Class)?;
+
+		let name: Identifier = self.expect_identifier_and_read()?.into();
+
+		self.expect_token_and_read(Token::LeftBrace)?;
+
+		let mut fields: Vec<Parameter> = Vec::new();
+
+		while !self.current_is(Token::RightBrace) {
+			if self.current_is(Token::Function) {
+				let function = self.parse_function(true)?;
+				if let Statement::FunctionDeclaration { name, params, body } = function {
+					let closure = Expression::Closure(params.clone(), body);
+
+					fields.push(Parameter { name, default: Some(closure) });
+				} else {
+					return Err(ParseError::UnexpectedToken(self.current.clone()));
+				}
+			} else {
+				let field: String = self.expect_identifier_and_read()?.into();
+
+				match self.current.clone() {
+					Token::Comma | Token::RightBrace | Token::Function | Token::Identifier(..) => {
+						fields.push(Parameter { name: field, default: None })
+					}
+					Token::Assign => {
+						self.expect_token_and_read(Token::Assign)?;
+
+						let default = self.parse_expression(Precedence::Lowest)?;
+
+						fields.push(Parameter { name: field, default: Some(default) });
+					}
+					_ => unreachable!(),
+				}
+			}
+		}
+
+		self.expect_token_and_read(Token::RightBrace)?;
+
+		Ok(Statement::ClassDeclaration { name, fields })
 	}
 }
