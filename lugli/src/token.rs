@@ -24,7 +24,7 @@ mod sanitizers {
 #[logos(skip r"[ \t\n\f]+")]
 #[logos(skip r"#[^\n]*")]
 pub enum Token {
-	#[token("fn")]
+	#[token("function")]
 	Function,
 	#[token("create")]
 	Create,
@@ -275,7 +275,7 @@ mod token_tests {
 			Token::Loop,
 		];
 
-		test_tokenizer("fn constant create true false if else while for class elif loop", &keywords);
+		test_tokenizer("function constant create true false if else while for class elif loop", &keywords);
 	}
 
 	#[test]
@@ -336,7 +336,7 @@ mod token_tests {
 	#[test]
 	fn it_can_recognise_full_code() {
 		let code = r##"
-			fn main() {
+			function main() {
 				constant a = 1
 				create b = 2
 				create c = a + b

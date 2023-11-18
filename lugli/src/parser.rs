@@ -661,10 +661,13 @@ mod tests {
 
 	#[test]
 	fn it_can_parse_function_declarations() {
-		assert_eq!(lex_and_parse("fn name() {}"), vec![Statement::FunctionDeclaration { name: String::from("name"), body: vec![], params: vec![] }]);
+		assert_eq!(
+			lex_and_parse("function name() {}"),
+			vec![Statement::FunctionDeclaration { name: String::from("name"), body: vec![], params: vec![] }]
+		);
 
 		assert_eq!(
-			lex_and_parse("fn name(person) {}"),
+			lex_and_parse("function name(person) {}"),
 			vec![Statement::FunctionDeclaration {
 				name: String::from("name"),
 				body: vec![],
@@ -673,7 +676,7 @@ mod tests {
 		);
 
 		assert_eq!(
-			lex_and_parse("fn say_hello(name, separator) {}"),
+			lex_and_parse("function say_hello(name, separator) {}"),
 			vec![Statement::FunctionDeclaration {
 				name: String::from("say_hello"),
 				body: vec![],
@@ -684,7 +687,7 @@ mod tests {
 		assert_eq!(
 			lex_and_parse(
 				"
-                fn say_hello() {
+                function say_hello() {
                     create name = true
                 }
             "
@@ -1022,7 +1025,7 @@ mod tests {
 					email
 				}
 
-				Person.new = fn (name, email) {
+				Person.new = function (name, email) {
 					return Person { name, email }
 				}
 
