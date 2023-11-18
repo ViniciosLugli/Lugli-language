@@ -67,4 +67,73 @@ struct Parser<'p> {
 	peek: Token,
 }
 
-impl<'p> Parser<'p> {}
+impl<'p> Parser<'p> {
+	fn new(tokens: Iter<'p, Token>) -> Self {
+		Self { current: Token::Eof, peek: Token::Eof, tokens }
+	}
+	fn parse_statement(&mut self) -> Result<Statement, ParseError> {
+		match self.current {
+			Token::Function => self.parse_fn(true),
+			Token::Class => self.parse_struct(),
+			Token::Create => self.parse_create(),
+			Token::Constant => self.parse_const(),
+			Token::If => self.parse_if(),
+			Token::For => self.parse_for(),
+			Token::While => self.parse_while(),
+			Token::Loop => self.parse_loop(),
+			Token::Return => self.parse_return(),
+			Token::Break => self.parse_break(),
+			Token::Continue => self.parse_continue(),
+			_ => Ok(Statement::Expression { expression: self.parse_expression(Precedence::Lowest)? }),
+		}
+	}
+
+	fn current_is(&self, token: Token) -> bool {
+		std::mem::discriminant(&self.current) == std::mem::discriminant(&token)
+	}
+
+	fn expect_token(&mut self, token: Token) -> Result<Token, ParseError> {
+		if self.current_is(token.clone()) {
+			Ok(self.current.clone())
+		} else {
+			Err(ParseError::UnexpectedTokenExpected(self.current.clone(), token))
+		}
+	}
+
+	fn expect_token_and_read(&mut self, token: Token) -> Result<Token, ParseError> {
+		let result = self.expect_token(token)?;
+
+		self.read();
+
+		Ok(result)
+	}
+
+	fn expect_identifier_and_read(&mut self) -> Result<Token, ParseError> {
+		self.expect_token_and_read(Token::Identifier(String::new()))
+	}
+
+	fn read(&mut self) {
+		self.current = self.peek.clone();
+		self.peek = if let Some(token) = self.tokens.next() { token.clone() } else { Token::Eof };
+	}
+
+	fn next(&mut self) -> Result<Option<Statement>, ParseError> {
+		if self.current == Token::Eof {
+			return Ok(None);
+		}
+
+		Ok(Some(self.parse_statement()?))
+	}
+
+	fn parse_block(&mut self) -> Result<Block, ParseError> {
+		let mut statements = Vec::new();
+
+		while !self.current_is(Token::RightBrace) && !self.current_is(Token::Eof) {
+			statements.push(self.parse_statement()?);
+		}
+
+		self.expect_token_and_read(Token::RightBrace)?;
+
+		Ok(statements)
+	}
+}
