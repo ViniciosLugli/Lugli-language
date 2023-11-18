@@ -1,6 +1,8 @@
 use crate::{
 	ast::{ArgumentValued, ArgumentValues, Expression, Op, Parameter, Program, Statement},
 	environment::{self, Environment, NativeFunctionCallback, Value},
+	parser,
+	token::LexerWrapper,
 };
 use colored::Colorize;
 use hashbrown::HashMap;
@@ -11,6 +13,30 @@ use std::{
 	rc::Rc,
 	slice::Iter,
 };
+
+pub fn register_global_functions(interpreter: &mut Interpreter) {
+	for (name, function) in crate::stdlib::GlobalObject::get_all_functions() {
+		interpreter.define_global_function(name, function);
+	}
+}
+
+pub fn register_global_classes(interpreter: &mut Interpreter) {
+	for (name, methods) in crate::stdlib::GlobalObject::get_all_structs() {
+		interpreter.define_global_class(name, methods);
+	}
+}
+
+pub fn interpret(input: &str) -> Result<(), InterpreterResult> {
+	let lexer = LexerWrapper::new(input);
+	let program = parser::parse(lexer).unwrap();
+
+	let mut interpreter = Interpreter::new(program.iter());
+
+	register_global_functions(&mut interpreter);
+	register_global_classes(&mut interpreter);
+
+	interpreter.run()
+}
 
 use thiserror::Error;
 
@@ -68,12 +94,11 @@ pub struct Interpreter<'i> {
 	ast: Iter<'i, Statement>,
 	environment: Rc<RefCell<Environment>>,
 	pub globals: HashMap<String, Value>,
-	path: PathBuf,
 }
 
 impl<'i> Interpreter<'i> {
-	pub fn new(ast: Iter<'i, Statement>, path: PathBuf) -> Self {
-		Self { ast, environment: Rc::new(RefCell::new(Environment::new())), globals: HashMap::new(), path }
+	pub fn new(ast: Iter<'i, Statement>) -> Self {
+		Self { ast, environment: Rc::new(RefCell::new(Environment::new())), globals: HashMap::new() }
 	}
 
 	fn run_statement(&mut self, statement: Statement) -> Result<(), InterpreterResult> {
@@ -122,7 +147,7 @@ impl<'i> Interpreter<'i> {
 					}
 				}
 
-				self.globals.insert(name.clone(), Value::Struct { name, fields: fields_filtred, methods, propreties: None });
+				self.globals.insert(name.clone(), Value::Class { name, fields: fields_filtred, methods, propreties: None });
 			}
 			Statement::For { iterable, value, index, then } => {
 				let iterable = self.run_expression(iterable)?;
@@ -409,13 +434,13 @@ impl<'i> Interpreter<'i> {
 				let definition = self.run_expression(*definition)?;
 
 				let (name, field_definitions, methods) = match definition.clone() {
-					Value::Struct { name, fields, methods, .. } => (name, fields, methods),
+					Value::Class { name, fields, methods, .. } => (name, fields, methods),
 					_ => unreachable!(),
 				};
 
 				let mut environment = Environment::new();
 
-				for parameter in field_definitions.iter().find(|param| param.has_default()) {
+				while let Some(parameter) = field_definitions.iter().find(|param| param.has_default()) {
 					let value = self.run_expression(parameter.get_default().unwrap())?;
 
 					environment.set(parameter.get_name(), value);
@@ -554,23 +579,17 @@ impl<'i> Interpreter<'i> {
 		})
 	}
 
-	pub fn path(&self) -> PathBuf {
-		self.path.clone()
-	}
-
 	fn define_global_function(&mut self, name: impl Into<String>, callback: NativeFunctionCallback) {
 		let name = name.into();
 
 		self.globals.insert(name.clone(), Value::NativeFunction { name, callback });
 	}
 
-	fn define_global_struct(&mut self, struct_name: impl Into<String>, methods: HashMap<String, Value>) {
-		let struct_name = struct_name.into();
+	fn define_global_class(&mut self, class_name: impl Into<String>, methods: HashMap<String, Value>) {
+		let class_name = class_name.into();
 
-		self.globals.insert(
-			struct_name.clone(),
-			Value::Struct { name: struct_name, methods: Rc::new(RefCell::new(methods)), fields: vec![], propreties: None },
-		);
+		self.globals
+			.insert(class_name.clone(), Value::Class { name: class_name, methods: Rc::new(RefCell::new(methods)), fields: vec![], propreties: None });
 	}
 
 	fn env(&self) -> Ref<Environment> {
@@ -609,7 +628,7 @@ impl<'i> Interpreter<'i> {
 				//	}
 				//} else
 				if let Some(value) = match *definition.clone() {
-					Value::Struct { fields, .. } => fields.iter().find(|p| p.name == field).map(|p| p.get_default().clone()).unwrap_or_else(|| None),
+					Value::Class { fields, .. } => fields.iter().find(|p| p.name == field).map(|p| p.get_default().clone()).unwrap_or_else(|| None),
 					_ => None,
 				} {
 					let initial = self.run_expression(value)?;
@@ -621,14 +640,14 @@ impl<'i> Interpreter<'i> {
 					}
 				} else {
 					let name = match *definition {
-						Value::Struct { name, .. } => name,
+						Value::Class { name, .. } => name,
 						_ => unreachable!(),
 					};
 
 					return Err(InterpreterResult::UndefinedField(name, field));
 				}
 			}
-			Value::Struct { name, methods, fields, .. } => {
+			Value::Class { name, methods, fields, .. } => {
 				if let Some(value) = methods.borrow().get(&field.clone()) {
 					value.clone()
 				} else if let Some(value) = fields.iter().find(|p| p.name == field).map(|p| p.get_default().clone()).unwrap_or_else(|| None) {
@@ -659,7 +678,7 @@ impl<'i> Interpreter<'i> {
 		Ok(())
 	}
 
-	fn run(&mut self) -> Result<(), InterpreterResult> {
+	pub fn run(&mut self) -> Result<(), InterpreterResult> {
 		while let Some(statement) = self.ast.next() {
 			self.run_statement(statement.clone())?;
 		}

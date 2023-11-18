@@ -7,3 +7,4 @@ authors = ["Vinicios Lugli <vinicioslugli@gmail.com>"]
 
 [dependencies]
 clap = "4.4.8"
+lugli = { path = "../lugli" }

@@ -1,21 +1,15 @@
-struct Objetive {
-	word
-	founded = [1, 2, 3]
+create sum = 2 + 3
+create product = 2 * 3
+create subtraction = 3 - 2
+create division = 3 / 2
+create precedence = 2 + 3 * 2 / 2
+create pow = 2 ** 8
+create module = 9 % 7
 
-	fn new(word) {
-		return Objetive { word: word }
-	}
-
-	fn check_letter(this, letter){
-		#this.founded = [1]
-		this.founded.push!(letter)
-		this.founded[0] = "c"
-		#Console.println!(this.founded)
-		#return this.word.contains?(letter)
-		return this.founded
-	}
-}
-
-create objetive = Objetive.new("vinicios")
-
-Console.println!(objetive.check_letter("i"))
+Console.println(sum)
+Console.println(product)
+Console.println(subtraction)
+Console.println(division)
+Console.println(precedence)
+Console.println(pow)
+Console.println(module)

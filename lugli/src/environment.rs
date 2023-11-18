@@ -52,7 +52,7 @@ pub enum Value {
 	String(String),
 	Null,
 	Bool(bool),
-	Struct { name: String, fields: Vec<Parameter>, methods: Rc<RefCell<HashMap<String, Value>>>, propreties: Option<Vec<Value>> },
+	Class { name: String, fields: Vec<Parameter>, methods: Rc<RefCell<HashMap<String, Value>>>, propreties: Option<Vec<Value>> },
 	ClassInstance { environment: Rc<RefCell<Environment>>, definition: Box<Value> },
 	List(Rc<RefCell<Vec<Value>>>),
 	Function { name: String, params: Vec<Parameter>, body: Block, environment: Option<Environment>, context: Option<Expression> },
@@ -76,13 +76,13 @@ impl Debug for Value {
 					format!("<{}>({})", name, params.into_iter().map(|p| p.name.clone()).collect::<Vec<String>>().join(", ")),
 				Value::ClassInstance { definition, .. } => {
 					let name = match *definition.clone() {
-						Value::Struct { name, .. } => name,
+						Value::Class { name, .. } => name,
 						_ => unreachable!(),
 					};
 
 					format!("<{}>", name)
 				}
-				Value::Struct { name, methods, fields, .. } => {
+				Value::Class { name, methods, fields, .. } => {
 					let name = format!("<struct:{}>", name);
 					let mut fields = fields.into_iter().map(|p| p.name.clone()).collect::<Vec<String>>();
 					let mut methods = methods
@@ -163,7 +163,7 @@ impl Value {
 			v @ Value::Function { .. } | v @ Value::ClassInstance { .. } | v @ Value::List(..) => format!("{:?}", v),
 			Value::Constant(v) => v.to_string(),
 			Value::NativeFunction { name, .. } | Value::NativeMethod { name, .. } => format!("<{}>", name),
-			Value::Struct { name, methods, fields, .. } => {
+			Value::Class { name, methods, fields, .. } => {
 				let name = format!("<struct:{}>", name);
 				let mut fields = fields.into_iter().map(|p| p.name.clone()).collect::<Vec<String>>();
 				let mut methods = methods
@@ -217,10 +217,10 @@ impl Value {
 			Value::Null => "null".into(),
 			Value::Function { .. } | Value::NativeFunction { .. } | Value::NativeMethod { .. } => "function".into(),
 			Value::ClassInstance { definition, .. } => match *definition.clone() {
-				Value::Struct { name, .. } => name,
+				Value::Class { name, .. } => name,
 				_ => unreachable!(),
 			},
-			Value::Struct { .. } => "struct".into(),
+			Value::Class { .. } => "struct".into(),
 			Value::List(..) => "list".into(),
 			Value::Constant(v) => v.typestring(),
 			_ => unreachable!(),

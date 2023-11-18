@@ -1,2 +1,2 @@
 [workspace]
-members = ["./lugli"]
+members = ["./lugli", "./cli"]
