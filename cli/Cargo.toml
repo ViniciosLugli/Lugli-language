@@ -1,0 +1,9 @@
+[package]
+name = "cli"
+version = "0.1.0"
+edition = "2021"
+authors = ["Vinicios Lugli <vinicioslugli@gmail.com>"]
+
+
+[dependencies]
+clap = "4.4.8"
