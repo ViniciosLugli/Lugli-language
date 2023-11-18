@@ -367,6 +367,8 @@ impl<'p> Parser<'p> {
 	}
 
 	fn parse_block(&mut self) -> Result<Block, ParseError> {
+		self.expect_token_and_read(Token::LeftBrace)?;
+
 		let mut statements = Vec::new();
 
 		while !self.current_is(Token::RightBrace) && !self.current_is(Token::Eof) {
@@ -602,7 +604,7 @@ mod tests {
 	}
 
 	#[test]
-	fn it_can_parse_fn_declarations() {
+	fn it_can_parse_function_declarations() {
 		assert_eq!(lex_and_parse("fn name() {}"), vec![Statement::FunctionDeclaration { name: String::from("name"), body: vec![], params: vec![] }]);
 
 		assert_eq!(
@@ -640,7 +642,7 @@ mod tests {
 	}
 
 	#[test]
-	fn it_can_parse_create_declarations_and_const() {
+	fn it_can_parse_create_declarations_and_constants() {
 		assert_eq!(lex_and_parse("create name"), vec![Statement::VariableDeclaration { name: String::from("name"), initial: None }]);
 
 		assert_eq!(
@@ -649,7 +651,7 @@ mod tests {
 		);
 
 		assert_eq!(
-			lex_and_parse("const bool = false"),
+			lex_and_parse("constant bool = false"),
 			vec![Statement::ConstantDeclaration { name: String::from("bool"), initial: Expression::Bool(false) }]
 		);
 	}
@@ -869,7 +871,7 @@ mod tests {
 					if true {
 						continue
 					}
-					-- never touch this create number
+					# never touch this create number
 					create number = 1
 				}"
 			),
@@ -940,10 +942,10 @@ mod tests {
 	}
 
 	#[test]
-	fn it_can_parse_struct_declarations() {
+	fn it_can_parse_class_declarations() {
 		assert_eq!(
 			lex_and_parse(
-				"struct Point {
+				"class Point {
 					x, y
 				}"
 			),
@@ -959,7 +961,7 @@ mod tests {
 
 		assert_eq!(
 			lex_and_parse(
-				"struct Person {
+				"class Person {
 					name,
 					email
 				}

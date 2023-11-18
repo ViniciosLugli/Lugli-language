@@ -8,7 +8,7 @@ mod sanitizers {
 	pub fn to_string(lex: &mut Lexer<Token>) -> Option<String> {
 		let slice = lex.slice();
 		if slice.starts_with('"') && slice.ends_with('"') {
-			Some(slice[1..slice.len() - 1].replace("\\\"", "\""))
+			Some(slice[1..slice.len() - 1].to_string())
 		} else {
 			Some(slice.to_string())
 		}
@@ -161,7 +161,7 @@ pub fn generate(input: &str) -> Vec<Token> {
 mod token_tests {
 	use super::*;
 
-	fn test_lexer(input: &str, expected_tokens: &[Token]) {
+	fn test_tokenizer(input: &str, expected_tokens: &[Token]) {
 		let mut lexer = Token::lexer(input);
 
 		for expected_token in expected_tokens {
@@ -177,7 +177,7 @@ mod token_tests {
 
 	#[test]
 	fn it_can_skip_comments() {
-		test_lexer("# foo", &[]);
+		test_tokenizer("# foo", &[]);
 	}
 
 	#[test]
@@ -197,7 +197,7 @@ mod token_tests {
 			Token::Loop,
 		];
 
-		test_lexer("fn constant create true false if else while for class elif loop", &keywords);
+		test_tokenizer("fn constant create true false if else while for class elif loop", &keywords);
 	}
 
 	#[test]
@@ -218,14 +218,14 @@ mod token_tests {
 			Token::Dot,
 		];
 
-		test_lexer("( ) { } +-*/ = == != : .", &symbols);
+		test_tokenizer("( ) { } +-*/ = == != : .", &symbols);
 	}
 
 	#[test]
 	fn it_can_recognise_symbol_equals() {
 		let symbol_equals = [Token::PlusAssign, Token::MinusAssign, Token::MultiplyAssign, Token::DivideAssign];
 
-		test_lexer("+= -= *= /=", &symbol_equals);
+		test_tokenizer("+= -= *= /=", &symbol_equals);
 	}
 
 	#[test]
@@ -237,14 +237,14 @@ mod token_tests {
 			Token::Identifier("helloWorld".to_owned()),
 		];
 
-		test_lexer("hello_world HelloWorld hello_world? helloWorld", &identifiers);
+		test_tokenizer("hello_world HelloWorld hello_world? helloWorld", &identifiers);
 	}
 
 	#[test]
 	fn it_can_recognise_numbers() {
 		let numbers = [Token::Number(12345.0), Token::Number(6789.01), Token::Number(12345.6789), Token::Number(0.0)];
 
-		test_lexer("12345 6789.01 12345.6789 0", &numbers);
+		test_tokenizer("12345 6789.01 12345.6789 0", &numbers);
 	}
 
 	#[test]
@@ -252,7 +252,7 @@ mod token_tests {
 		let strings =
 			[Token::String(r##"testing"##.to_owned()), Token::String(r##"testing with \""##.to_owned()), Token::String(r##"testing \n"##.to_owned())];
 
-		test_lexer(r##""testing" "testing with \"" "testing \n""##, &strings);
+		test_tokenizer(r##""testing" "testing with \"" "testing \n""##, &strings);
 	}
 
 	#[test]
@@ -293,6 +293,6 @@ mod token_tests {
 			Token::RightBrace,
 		];
 
-		test_lexer(code, &tokens);
+		test_tokenizer(code, &tokens);
 	}
 }
