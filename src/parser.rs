@@ -71,12 +71,85 @@ impl<'p> Parser<'p> {
 	fn new(tokens: Iter<'p, Token>) -> Self {
 		Self { current: Token::Eof, peek: Token::Eof, tokens }
 	}
+
+	fn parse_expression(&mut self, precedence: Precedence) -> Result<Expression, ParseError> {
+		let mut left = match self.current.clone() {
+			Token::String(s) => {
+				self.expect_token_and_read(Token::String(String::new()))?;
+				Expression::String(s.to_string())
+			}
+			Token::Null => {
+				self.expect_token_and_read(Token::Null)?;
+				Expression::Null
+			}
+			Token::Number(n) => {
+				self.expect_token_and_read(Token::Number(0.0))?;
+				Expression::Number(n)
+			}
+			Token::True => {
+				self.expect_token_and_read(Token::True)?;
+				Expression::Bool(true)
+			}
+			Token::False => {
+				self.expect_token_and_read(Token::False)?;
+				Expression::Bool(false)
+			}
+			Token::Identifier(s) => {
+				self.expect_identifier_and_read()?;
+				Expression::Identifier(s)
+			}
+			Token::Function => {
+				let (params, body) = match self.parse_function(false)? {
+					Statement::FunctionDeclaration { params, body, .. } => (params, body),
+					_ => return Err(ParseError::Unreachable),
+				};
+
+				Expression::Closure(params, body)
+			}
+			t @ Token::Minus | t @ Token::Bang => {
+				self.expect_token_and_read(t.clone())?;
+
+				Expression::Prefix(Op::token(t), self.parse_expression(Precedence::Prefix)?.boxed())
+			}
+			Token::LeftBracket => {
+				self.expect_token_and_read(Token::LeftBracket)?;
+
+				let mut items: Vec<Expression> = Vec::new();
+
+				while !self.current_is(Token::RightBracket) {
+					items.push(self.parse_expression(Precedence::Lowest)?);
+
+					if self.current_is(Token::Comma) {
+						self.expect_token_and_read(Token::Comma)?;
+					}
+				}
+
+				self.expect_token_and_read(Token::RightBracket)?;
+
+				Expression::List(items)
+			}
+			_ => return Err(ParseError::UnexpectedToken(self.current.clone())),
+		};
+
+		while !self.current_is(Token::Eof) && precedence < Precedence::token(self.current.clone()) {
+			if let Some(expression) = self.parse_postfix_expression(left.clone())? {
+				left = expression;
+			} else if let Some(expression) = self.parse_infix_expression(left.clone())? {
+				left = expression
+			} else {
+				break;
+			}
+		}
+
+		Ok(left)
+	}
+
 	fn parse_statement(&mut self) -> Result<Statement, ParseError> {
 		match self.current {
-			Token::Function => self.parse_fn(true),
-			Token::Class => self.parse_struct(),
+			Token::Function => self.parse_function(true),
+			Token::Class => self.parse_class(),
 			Token::Create => self.parse_create(),
-			Token::Constant => self.parse_const(),
+			Token::Constant => self.parse_constant(),
 			Token::If => self.parse_if(),
 			Token::For => self.parse_for(),
 			Token::While => self.parse_while(),
