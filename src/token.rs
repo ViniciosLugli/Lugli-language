@@ -1,4 +1,5 @@
 use std::clone;
+use std::fmt;
 
 use logos::{Lexer, Logos};
 
@@ -121,10 +122,9 @@ pub enum Token {
 	#[token("]")]
 	RightBracket,
 
-	#[token("true")]
-	True,
-	#[token("false")]
-	False,
+	#[token("false", |_| false)]
+	#[token("true", |_| true)]
+	Bool(bool),
 	#[token("null")]
 	Null,
 
@@ -150,11 +150,69 @@ impl Into<String> for Token {
 	}
 }
 
-pub fn generate(input: &str) -> Vec<Token> {
-	let lexer = Token::lexer(input);
-	let mut tokens: Vec<Token> = lexer.filter_map(Result::ok).collect();
-	tokens.push(Token::Eof);
-	tokens
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct Position(usize, usize);
+
+impl fmt::Display for Position {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(f, "{}:{}", self.0, self.1)
+	}
+}
+
+pub struct LexerWrapper<'a> {
+	lexer: Lexer<'a, Token>,
+}
+
+impl<'a> LexerWrapper<'a> {
+	pub fn new(input: &'a str) -> Self {
+		Self { lexer: Token::lexer(input) }
+	}
+
+	pub fn next(&mut self) -> Option<Token> {
+		self.lexer.next().map(|t| t.unwrap())
+	}
+
+	pub fn peek(&mut self) -> Option<Token> {
+		self.lexer.clone().next().map(|t| t.unwrap())
+	}
+
+	pub fn slice(&self) -> &str {
+		self.lexer.slice()
+	}
+
+	pub fn span(&self) -> std::ops::Range<usize> {
+		self.lexer.span()
+	}
+
+	pub fn source(&self) -> &str {
+		self.lexer.source()
+	}
+
+	pub fn generate_all_tokens(&mut self) -> Vec<Token> {
+		let mut tokens = Vec::new();
+
+		while let Some(token) = self.next() {
+			tokens.push(token);
+		}
+
+		tokens
+	}
+
+	pub fn position(&self) -> Position {
+		let mut line = 1;
+		let mut column = 1;
+
+		for c in self.lexer.source()[..self.lexer.span().start].chars() {
+			if c == '\n' {
+				line += 1;
+				column = 1;
+			} else {
+				column += 1;
+			}
+		}
+
+		Position(line, column)
+	}
 }
 
 #[cfg(test)]
@@ -162,17 +220,37 @@ mod token_tests {
 	use super::*;
 
 	fn test_tokenizer(input: &str, expected_tokens: &[Token]) {
-		let mut lexer = Token::lexer(input);
+		let mut lexer = LexerWrapper::new(input);
 
 		for expected_token in expected_tokens {
 			match lexer.next() {
-				Some(Ok(token)) => assert_eq!(&token, expected_token),
-				Some(Err(e)) => panic!("Lexer error: {:?}", e),
+				Some(token) => assert_eq!(&token, expected_token),
 				None => panic!("Unexpected end of tokens"),
 			}
 		}
 
 		assert!(lexer.next().is_none(), "More tokens than expected");
+	}
+
+	#[test]
+	fn test_get_line_column() {
+		let mut lexer = LexerWrapper::new(
+			"if false {
+				create number = 3
+			} elif true{
+				create number = 6
+			}else {
+				create number = 9
+			}",
+		);
+
+		let token = lexer.next().unwrap();
+		let token = lexer.next().unwrap();
+		let token = lexer.next().unwrap();
+		let token = lexer.next().unwrap();
+		let token = lexer.next().unwrap();
+
+		assert_eq!(lexer.position(), Position(2, 12));
 	}
 
 	#[test]
@@ -186,8 +264,8 @@ mod token_tests {
 			Token::Function,
 			Token::Constant,
 			Token::Create,
-			Token::True,
-			Token::False,
+			Token::Bool(true),
+			Token::Bool(false),
 			Token::If,
 			Token::Else,
 			Token::While,

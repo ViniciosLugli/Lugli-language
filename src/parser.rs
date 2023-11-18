@@ -1,13 +1,13 @@
 use crate::ast::Program;
 use crate::ast::{Argument, Block, CallArguments, ConditionBlock, Expression, Identifier, Op, Parameter, Statement};
-use crate::token::Token;
+use crate::token::{LexerWrapper, Position, Token};
 use colored::Colorize;
 use hashbrown::HashMap;
 use std::slice::Iter;
 use thiserror::Error;
 
-pub fn parse(tokens: Vec<Token>) -> Result<Program, ParseError> {
-	let mut parser = Parser::new(tokens.iter());
+pub fn parse(lexer: LexerWrapper<'_>) -> Result<Program, ParseError> {
+	let mut parser = Parser::new(lexer);
 
 	parser.read();
 	parser.read();
@@ -23,23 +23,23 @@ pub fn parse(tokens: Vec<Token>) -> Result<Program, ParseError> {
 
 #[derive(Debug, Error)]
 pub enum ParseError {
-	#[error("Unexpected token `{0:?}`")]
-	UnexpectedToken(Token),
+	#[error("Unexpected token `{0:?}` at {1}")]
+	UnexpectedToken(Token, Position),
 
-	#[error("Unexpected token `{0:?}`, expected `{1:?}`")]
-	UnexpectedTokenExpected(Token, Token),
+	#[error("Unexpected token `{0:?}`, expected `{1:?}` at {2}")]
+	UnexpectedTokenExpected(Token, Token, Position),
 
-	#[error("Expected function declaration inside class")]
-	ExpectedFunctionDeclarationClass,
+	#[error("Expected function declaration inside class at {0}")]
+	ExpectedFunctionDeclarationClass(Position),
 
-	#[error("Unexpected token in class declaration")]
-	UnexpectedTokenClass,
+	#[error("Unexpected token `{0:?}` in class declaration at {1}")]
+	UnexpectedTokenClass(Token, Position),
 
-	#[error("Unexpected end of file")]
-	UnexpectedEof,
+	#[error("Unexpected end of file at {0}")]
+	UnexpectedEof(Position),
 
-	#[error("Entered unreachable code.")]
-	Unreachable,
+	#[error("Entered unreachable code at {0}")]
+	Unreachable(Position),
 }
 
 impl ParseError {
@@ -95,14 +95,14 @@ impl Precedence {
 }
 
 struct Parser<'p> {
-	tokens: Iter<'p, Token>,
+	lexer: LexerWrapper<'p>,
 	current: Token,
 	peek: Token,
 }
 
 impl<'p> Parser<'p> {
-	fn new(tokens: Iter<'p, Token>) -> Self {
-		Self { current: Token::Eof, peek: Token::Eof, tokens }
+	fn new(lexer: LexerWrapper<'p>) -> Self {
+		Self { current: Token::Eof, peek: Token::Eof, lexer }
 	}
 
 	fn parse_expression(&mut self, precedence: Precedence) -> Result<Expression, ParseError> {
@@ -119,12 +119,12 @@ impl<'p> Parser<'p> {
 				self.expect_token_and_read(Token::Number(0.0))?;
 				Expression::Number(n)
 			}
-			Token::True => {
-				self.expect_token_and_read(Token::True)?;
+			Token::Bool(true) => {
+				self.expect_token_and_read(Token::Bool(true))?;
 				Expression::Bool(true)
 			}
-			Token::False => {
-				self.expect_token_and_read(Token::False)?;
+			Token::Bool(false) => {
+				self.expect_token_and_read(Token::Bool(false))?;
 				Expression::Bool(false)
 			}
 			Token::Identifier(s) => {
@@ -134,7 +134,7 @@ impl<'p> Parser<'p> {
 			Token::Function => {
 				let (params, body) = match self.parse_function(false)? {
 					Statement::FunctionDeclaration { params, body, .. } => (params, body),
-					_ => return Err(ParseError::Unreachable),
+					_ => return Err(ParseError::Unreachable(self.lexer.position())),
 				};
 
 				Expression::Closure(params, body)
@@ -161,7 +161,7 @@ impl<'p> Parser<'p> {
 
 				Expression::List(items)
 			}
-			_ => return Err(ParseError::UnexpectedToken(self.current.clone())),
+			_ => return Err(ParseError::UnexpectedToken(self.current.clone(), self.lexer.position())),
 		};
 
 		while !self.current_is(Token::Eof) && precedence < Precedence::token(self.current.clone()) {
@@ -193,7 +193,7 @@ impl<'p> Parser<'p> {
 			let argument = match expression {
 				Expression::Assign(param, value) => match *param {
 					Expression::Identifier(name) => Argument::new(Some(name), *value),
-					_ => return Err(ParseError::UnexpectedToken(self.current.clone())),
+					_ => return Err(ParseError::UnexpectedToken(self.current.clone(), self.lexer.position())),
 				},
 				_ => Argument::new(None, expression),
 			};
@@ -384,7 +384,7 @@ impl<'p> Parser<'p> {
 		if self.current_is(token.clone()) {
 			Ok(self.current.clone())
 		} else {
-			Err(ParseError::UnexpectedTokenExpected(self.current.clone(), token))
+			Err(ParseError::UnexpectedTokenExpected(self.current.clone(), token, self.lexer.position()))
 		}
 	}
 
@@ -402,7 +402,7 @@ impl<'p> Parser<'p> {
 
 	fn read(&mut self) {
 		self.current = self.peek.clone();
-		self.peek = if let Some(token) = self.tokens.next() { token.clone() } else { Token::Eof };
+		self.peek = self.lexer.next().unwrap_or(Token::Eof);
 	}
 
 	fn next(&mut self) -> Result<Option<Statement>, ParseError> {
@@ -620,7 +620,7 @@ impl<'p> Parser<'p> {
 
 					fields.push(Parameter { name, default: Some(closure) });
 				} else {
-					return Err(ParseError::UnexpectedToken(self.current.clone()));
+					return Err(ParseError::UnexpectedToken(self.current.clone(), self.lexer.position()));
 				}
 			} else {
 				let field: String = self.expect_identifier_and_read()?.into();
@@ -655,8 +655,8 @@ mod tests {
 	use crate::token;
 
 	fn lex_and_parse(input: &str) -> Program {
-		let tokens = token::generate(input);
-		parse(tokens).unwrap()
+		let lexer = LexerWrapper::new(input);
+		parse(lexer).unwrap()
 	}
 
 	#[test]
