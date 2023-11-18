@@ -47,7 +47,7 @@ pub enum Expression {
 	Infix(Box<Expression>, Op, Box<Expression>),
 	Prefix(Op, Box<Expression>),
 	Class(Box<Expression>, HashMap<Identifier, Expression>),
-	Call(Box<Expression>, Vec<Parameter>),
+	Call(Box<Expression>, CallArguments),
 	Closure(Vec<Parameter>, Vec<Statement>),
 	Index(Box<Expression>, Option<Box<Expression>>),
 	Get(Box<Expression>, Identifier),
@@ -103,5 +103,44 @@ impl Op {
 			Token::NotIn => Self::NotIn,
 			_ => unreachable!("{:?}", token),
 		}
+	}
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Argument {
+	name: Option<String>,
+	expression: Expression,
+}
+
+impl Argument {
+	pub fn new(name: Option<String>, expression: Expression) -> Self {
+		Self { name, expression }
+	}
+
+	pub fn get_expression(&self) -> &Expression {
+		&self.expression
+	}
+
+	pub fn get_name(&self) -> &Option<String> {
+		&self.name
+	}
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct CallArguments {
+	arguments: Vec<Argument>,
+}
+
+impl CallArguments {
+	pub fn new() -> Self {
+		Self { arguments: Vec::new() }
+	}
+
+	pub fn add_argument(&mut self, argument: Argument) {
+		self.arguments.push(argument);
+	}
+
+	pub fn get_arguments(&self) -> &Vec<Argument> {
+		&self.arguments
 	}
 }
