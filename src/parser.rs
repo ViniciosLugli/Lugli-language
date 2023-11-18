@@ -232,7 +232,24 @@ impl<'p> Parser<'p> {
 
 	fn parse_postfix_expression(&mut self, left: Expression) -> Result<Option<Expression>, ParseError> {
 		Ok(match self.current {
-			Token::Dot => unimplemented!(),
+			Token::Dot => {
+				self.expect_token_and_read(Token::Dot)?;
+
+				let field: Identifier = self.expect_identifier_and_read()?.into();
+
+				if self.current_is(Token::LeftParen) {
+					let args = self.parse_arguments()?;
+					Some(Expression::Call(Box::new(Expression::Get(Box::new(left), field)), args))
+				} else {
+					if self.current_is(Token::Assign) {
+						self.expect_token_and_read(Token::Assign)?;
+						let right = self.parse_expression(Precedence::Lowest)?;
+						Some(Expression::Assign(Box::new(Expression::Get(Box::new(left), field)), Box::new(right)))
+					} else {
+						Some(Expression::Get(Box::new(left), field))
+					}
+				}
+			}
 
 			Token::LeftBracket => {
 				self.expect_token_and_read(Token::LeftBracket)?;
@@ -258,28 +275,8 @@ impl<'p> Parser<'p> {
 		})
 	}
 
-	fn parse_assignment_expression(&mut self, left: Expression) -> Result<Option<Expression>, ParseError> {
-		let op = match self.current {
-			Token::Assign => Op::Assign,
-			Token::PlusAssign => Op::Add,
-			Token::MinusAssign => Op::Subtract,
-			Token::MultiplyAssign => Op::Multiply,
-			Token::DivideAssign => Op::Divide,
-			_ => return Err(ParseError::UnexpectedToken(self.current.clone())),
-		};
-
-		self.read();
-		let right = self.parse_expression(Precedence::Lowest)?;
-		Ok(Some(Expression::MathAssign(Box::new(left), op, Box::new(right))))
-	}
-
-	fn parse_increment_expression(&mut self, left: Expression, op: Op) -> Result<Option<Expression>, ParseError> {
-		self.read();
-		Ok(Some(Expression::MathAssign(Box::new(left), op, Box::new(Expression::Number(1.0)))))
-	}
-
 	fn parse_infix_expression(&mut self, left: Expression) -> Result<Option<Expression>, ParseError> {
-		match self.current {
+		Ok(match self.current {
 			Token::Plus
 			| Token::Minus
 			| Token::Asterisk
@@ -297,17 +294,67 @@ impl<'p> Parser<'p> {
 			| Token::NotIn
 			| Token::Percent => {
 				let token = self.current.clone();
+
 				self.read();
+
 				let right = self.parse_expression(Precedence::token(token.clone()))?;
-				Ok(Some(Expression::Infix(Box::new(left), Op::token(token), Box::new(right))))
+
+				Some(Expression::Infix(Box::new(left), Op::token(token), Box::new(right)))
 			}
-			Token::Assign | Token::PlusAssign | Token::MinusAssign | Token::MultiplyAssign | Token::DivideAssign => {
-				self.parse_assignment_expression(left)
+			Token::Assign => {
+				self.read();
+
+				let right = self.parse_expression(Precedence::Lowest)?;
+
+				Some(Expression::Assign(Box::new(left), Box::new(right)))
 			}
-			Token::Increment => self.parse_increment_expression(left, Op::Add),
-			Token::Decrement => self.parse_increment_expression(left, Op::Subtract),
-			_ => Ok(None),
-		}
+
+			Token::PlusAssign => {
+				self.read();
+
+				let right = self.parse_expression(Precedence::Lowest)?;
+
+				Some(Expression::MathAssign(Box::new(left), Op::Add, Box::new(right)))
+			}
+
+			Token::MinusAssign => {
+				self.read();
+
+				let right = self.parse_expression(Precedence::Lowest)?;
+
+				Some(Expression::MathAssign(Box::new(left), Op::Subtract, Box::new(right)))
+			}
+
+			Token::MultiplyAssign => {
+				self.read();
+
+				let right = self.parse_expression(Precedence::Lowest)?;
+
+				Some(Expression::MathAssign(Box::new(left), Op::Multiply, Box::new(right)))
+			}
+
+			Token::DivideAssign => {
+				self.read();
+
+				let right = self.parse_expression(Precedence::Lowest)?;
+
+				Some(Expression::MathAssign(Box::new(left), Op::Divide, Box::new(right)))
+			}
+
+			Token::Increment => {
+				self.read();
+
+				Some(Expression::MathAssign(Box::new(left), Op::Add, Box::new(Expression::Number(1.0))))
+			}
+
+			Token::Decrement => {
+				self.read();
+
+				Some(Expression::MathAssign(Box::new(left), Op::Subtract, Box::new(Expression::Number(1.0))))
+			}
+
+			_ => None,
+		})
 	}
 
 	// parse_assignment_expression and parse_increment_expression remain the same
@@ -579,7 +626,9 @@ impl<'p> Parser<'p> {
 				let field: String = self.expect_identifier_and_read()?.into();
 
 				match self.current.clone() {
-					Token::Comma | Token::RightBrace | Token::Function | Token::Identifier(..) => {
+					Token::Comma => {
+						self.expect_token_and_read(Token::Comma)?;
+
 						fields.push(Parameter { name: field, default: None })
 					}
 					Token::Assign => {
@@ -589,7 +638,7 @@ impl<'p> Parser<'p> {
 
 						fields.push(Parameter { name: field, default: Some(default) });
 					}
-					_ => unreachable!(),
+					_ => fields.push(Parameter { name: field, default: None }),
 				}
 			}
 		}
@@ -931,7 +980,7 @@ mod tests {
 					if true {
 						continue
 					}
-					-- never touch this create number
+					# never touch this create number
 					create number = 1
 				}"
 			),
@@ -968,14 +1017,17 @@ mod tests {
 
 		assert_eq!(
 			lex_and_parse(
-				"class Person {
+				r##"class Person {
 					name,
 					email
 				}
 
 				Person.new = fn (name, email) {
 					return Person { name, email }
-				}"
+				}
+
+				person = Person.new("John", "test@email.com")
+				"##
 			),
 			vec![
 				Statement::ClassDeclaration {
@@ -990,6 +1042,17 @@ mod tests {
 							vec![Statement::Return {
 								value: Expression::Class(Box::new(Expression::Identifier("Person".to_owned())), struct_fields)
 							}]
+						))
+					)
+				},
+				Statement::Expression {
+					expression: Expression::Assign(
+						Box::new(Expression::Identifier("person".to_owned())),
+						Box::new(Expression::Call(
+							Box::new(Expression::Get(Box::new(Expression::Identifier("Person".to_owned())), "new".to_owned())),
+							CallArguments::new()
+								.with_argument(Argument::new(None, Expression::String("John".to_owned())))
+								.with_argument(Argument::new(None, Expression::String("test@email.com".to_owned())))
 						))
 					)
 				}
